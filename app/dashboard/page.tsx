@@ -84,6 +84,9 @@ export default function DashboardPage() {
                 <Button onClick={() => router.push("/requests/send")} variant="outline" className="w-full">
                   Organization Requests
                 </Button>
+                <Button onClick={() => router.push("/roles")} variant="outline" className="w-full">
+                  Roles & Permissions
+                </Button>
               </div>
             </CardContent>
           </Card>
