@@ -87,6 +87,9 @@ export default function DashboardPage() {
                 <Button onClick={() => router.push("/roles")} variant="outline" className="w-full">
                   Roles & Permissions
                 </Button>
+                <Button onClick={() => router.push("/teams")} variant="outline" className="w-full">
+                  Teams Management
+                </Button>
               </div>
             </CardContent>
           </Card>
