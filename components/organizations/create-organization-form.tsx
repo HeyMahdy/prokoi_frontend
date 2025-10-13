@@ -24,10 +24,15 @@ export function CreateOrganizationForm() {
     setSuccess(false)
 
     try {
-      await fetchWithAuth("/api/organizations/create", {
-        method: "POST",
-        body: JSON.stringify({ name }),
+      const params = new URLSearchParams({
+        name: name,
       })
+
+      const response = await fetchWithAuth(`/api/organizations/create?${params.toString()}`, {
+        method: "POST",
+      })
+
+      console.log("Organization creation response:", response)
 
       // Revalidate the organizations list
       mutate("/api/organizations/get")
@@ -39,7 +44,27 @@ export function CreateOrganizationForm() {
       // Hide success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create organization")
+      console.error("Organization creation error:", err)
+      
+      // Handle different error types more gracefully
+      let errorMsg = "Failed to create organization"
+      
+      if (err instanceof Error) {
+        errorMsg = err.message
+      } else if (typeof err === 'string') {
+        errorMsg = err
+      } else if (err && typeof err === 'object') {
+        // Handle cases where error might be an object
+        const errObj = err as any
+        errorMsg = errObj.message || errObj.error || errObj.detail || errorMsg
+      }
+      
+      // Ensure the error message is user-friendly
+      if (errorMsg.includes('[object Object]')) {
+        errorMsg = "An error occurred while creating the organization. Please try again."
+      }
+      
+      setError(errorMsg)
     } finally {
       setIsLoading(false)
     }

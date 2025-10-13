@@ -20,6 +20,9 @@ export function OrganizationsTable() {
     revalidateOnFocus: false,
   })
 
+  console.log("Organizations data:", data)
+  console.log("Organizations error:", error)
+
   return (
     <Card>
       <CardHeader>
@@ -38,7 +41,7 @@ export function OrganizationsTable() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              {error instanceof Error ? error.message : "Failed to load organizations"}
+              {error instanceof Error ? error.message : typeof error === 'string' ? error : "Failed to load organizations"}
             </AlertDescription>
           </Alert>
         )}
