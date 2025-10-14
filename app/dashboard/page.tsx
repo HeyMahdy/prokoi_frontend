@@ -232,6 +232,9 @@ export default function DashboardPage() {
                   <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/teams`)} variant="outline" className="w-full">
                     Teams Management
                   </Button>
+                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/workspaces`)} variant="outline" className="w-full">
+                    Workspaces Management
+                  </Button>
                 </div>
               </CardContent>
             </Card>
