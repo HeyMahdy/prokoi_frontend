@@ -47,9 +47,16 @@ export function IncomingRequestsTable() {
     setRespondingTo(requestId)
 
     try {
-      const response = await fetchWithAuth(`/api/organization-requests/${requestId}/respond`, {
+      const params = new URLSearchParams({
+        decision: status,
+      })
+      
+      const url = `/api/organization-requests/${requestId}/respond?${params.toString()}`
+      console.log("Sending request to:", url)
+      console.log("Decision parameter:", status)
+
+      const response = await fetchWithAuth(url, {
         method: "PUT",
-        body: JSON.stringify({ status }),
       })
 
       toast({
