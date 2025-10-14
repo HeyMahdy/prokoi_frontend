@@ -41,12 +41,12 @@ export function SendRequestForm() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetchWithAuth(`/api/organizations/${selectedOrgId}/requests`, {
+      const params = new URLSearchParams({
+        receiver_email: receiverEmail,
+      })
+
+      const response = await fetchWithAuth(`/api/organizations/${selectedOrgId}/requests?${params.toString()}`, {
         method: "POST",
-        body: JSON.stringify({
-          org_id: Number.parseInt(selectedOrgId),
-          receiver_email: receiverEmail,
-        }),
       })
 
       toast({
