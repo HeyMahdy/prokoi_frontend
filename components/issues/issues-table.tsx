@@ -15,7 +15,7 @@ import { fetchWithAuth } from "@/lib/api"
 interface Issue {
   id: number
   project_id: number
-  issues_type_id: number
+  type_id: number
   title: string
   description: string
   story_points: number | null
@@ -46,7 +46,7 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
   const queryParams = new URLSearchParams()
   if (statusFilter && statusFilter !== "all") queryParams.append("status", statusFilter)
   if (priorityFilter && priorityFilter !== "all") queryParams.append("priority", priorityFilter)
-  if (typeFilter && typeFilter !== "all") queryParams.append("issues_type_id", typeFilter)
+  if (typeFilter && typeFilter !== "all") queryParams.append("type_id", typeFilter)
   
   const queryString = queryParams.toString()
   const apiUrl = `/api/projects/${projectId}/issues${queryString ? `?${queryString}` : ""}`
@@ -287,7 +287,11 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
-                          {issueTypes?.find(t => t.id === issue.issues_type_id)?.name || "Unknown"}
+                          {(() => {
+                            const issueType = issueTypes?.find(t => t.id === issue.type_id);
+                            console.log(`Issue ${issue.id}: type_id=${issue.type_id}, issueTypes=`, issueTypes, 'found=', issueType);
+                            return issueType?.name || "Unknown";
+                          })()}
                         </Badge>
                       </TableCell>
                       <TableCell>{getStatusBadge(issue.status)}</TableCell>

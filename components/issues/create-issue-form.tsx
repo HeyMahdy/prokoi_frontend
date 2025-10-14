@@ -91,7 +91,7 @@ export function CreateIssueForm({ projectId, onSuccess }: CreateIssueFormProps) 
         story_points: storyPoints ? parseInt(storyPoints.toString()) : null,
         status,
         priority,
-        issues_type_id: parseInt(issuesTypeId.toString()),
+        type_id: parseInt(issuesTypeId.toString()),
         parent_issue_id: parentIssueId && parentIssueId !== "" ? parentIssueId : null,
       }
 
