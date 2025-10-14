@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Bug } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { mutate } from "swr"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface Project {
   id: number
@@ -129,6 +131,7 @@ export function ProjectsTable({ workspaceId }: ProjectsTableProps) {
                       <TableHead>Creator</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Last Updated</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -182,6 +185,14 @@ export function ProjectsTable({ workspaceId }: ProjectsTableProps) {
                         </TableCell>
                         <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/organizations/${project.organization_id}/workspaces/${project.workspace_id}/projects/${project.id}/issues`}>
+                              <Bug className="h-4 w-4 mr-2" />
+                              Issues
+                            </Link>
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

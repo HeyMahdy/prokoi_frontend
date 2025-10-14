@@ -43,7 +43,7 @@ export function IncomingRequestsTable() {
     })
   }
 
-  const handleRespond = async (requestId: number, status: "accepted" | "rejected") => {
+  const handleRespond = async (requestId: number, status: "accepted" | "rejected", organizationId: number) => {
     setRespondingTo(requestId)
 
     try {
@@ -51,9 +51,10 @@ export function IncomingRequestsTable() {
         decision: status,
       })
       
-      const url = `/api/organization-requests/${requestId}/respond?${params.toString()}`
+      const url = `/api/organization-requests/${requestId}/respond/${organizationId}?${params.toString()}`
       console.log("Sending request to:", url)
       console.log("Decision parameter:", status)
+      console.log("Organization ID:", organizationId)
 
       const response = await fetchWithAuth(url, {
         method: "PUT",
@@ -138,7 +139,7 @@ export function IncomingRequestsTable() {
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => handleRespond(request.id, "accepted")}
+                            onClick={() => handleRespond(request.id, "accepted", request.organization_id)}
                             disabled={respondingTo === request.id}
                           >
                             {respondingTo === request.id ? (
@@ -153,7 +154,7 @@ export function IncomingRequestsTable() {
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleRespond(request.id, "rejected")}
+                            onClick={() => handleRespond(request.id, "rejected", request.organization_id)}
                             disabled={respondingTo === request.id}
                           >
                             {respondingTo === request.id ? (
