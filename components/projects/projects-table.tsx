@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertCircle, Bug } from "lucide-react"
+import { AlertCircle, Bug, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { mutate } from "swr"
 import { Button } from "@/components/ui/button"
@@ -30,9 +30,11 @@ interface Project {
 
 interface ProjectsTableProps {
   workspaceId: number
+  onMyIssues?: (projectId: number) => void
+  onAssignIssues?: (projectId: number) => void
 }
 
-export function ProjectsTable({ workspaceId }: ProjectsTableProps) {
+export function ProjectsTable({ workspaceId, onMyIssues, onAssignIssues }: ProjectsTableProps) {
   const { data, error, isLoading } = useSWR<Project[]>(
     `/api/workspaces/${workspaceId}/projects`,
     fetchWithAuth,
@@ -186,12 +188,34 @@ export function ProjectsTable({ workspaceId }: ProjectsTableProps) {
                         <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/organizations/${project.organization_id}/workspaces/${project.workspace_id}/projects/${project.id}/issues`}>
-                              <Bug className="h-4 w-4 mr-2" />
-                              Issues
-                            </Link>
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/organizations/${project.organization_id}/workspaces/${project.workspace_id}/projects/${project.id}/issues`}>
+                                <Bug className="h-4 w-4 mr-2" />
+                                Issues
+                              </Link>
+                            </Button>
+                            {onMyIssues && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => onMyIssues(project.id)}
+                              >
+                                <User className="h-4 w-4 mr-2" />
+                                My Issues
+                              </Button>
+                            )}
+                            {onAssignIssues && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => onAssignIssues(project.id)}
+                              >
+                                <User className="h-4 w-4 mr-2" />
+                                Assign Issues
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

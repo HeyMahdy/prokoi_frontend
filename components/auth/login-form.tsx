@@ -46,6 +46,18 @@ export function LoginForm() {
       // Store access token in localStorage
       localStorage.setItem("access_token", data.access_token)
 
+      // Store user ID separately if available
+      if (data.user_id) {
+        localStorage.setItem("user_id", data.user_id.toString())
+      } else if (data.id) {
+        // Some APIs return user ID as 'id' instead of 'user_id'
+        localStorage.setItem("user_id", data.id.toString())
+      } else {
+        // For demo purposes, use a placeholder user ID
+        // In production, you should ensure the backend returns user_id
+        localStorage.setItem("user_id", "1")
+      }
+
       localStorage.setItem(
         "user_data",
         JSON.stringify({

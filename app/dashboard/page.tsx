@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, Building2, LogOut, User, Mail, Users, Settings, Shield, Layers, FolderOpen, Bug } from "lucide-react"
 
 interface Organization {
   id: number
@@ -75,63 +75,126 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="border-b border-border/50 backdrop-blur-sm bg-background/95 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {selectedOrg && (
-              <Button variant="ghost" onClick={handleBackToDashboard}>
-                ← Back to Dashboard
-              </Button>
-            )}
-            <h1 className="text-xl font-bold text-foreground">
-              {selectedOrg ? `${selectedOrg.name} Management` : "Dashboard"}
-            </h1>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+              <Building2 className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div className="flex items-center gap-4">
+              {selectedOrg && (
+                <Button variant="ghost" onClick={handleBackToDashboard} size="sm">
+                  ← Back to Dashboard
+                </Button>
+              )}
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">
+                  {selectedOrg ? `${selectedOrg.name} Management` : "Dashboard"}
+                </h1>
+                {user && !selectedOrg && (
+                  <p className="text-sm text-muted-foreground">
+                    Welcome back, {user.name}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-          <Button onClick={handleLogout} variant="outline">
-            Log out
-          </Button>
+          <div className="flex items-center gap-3">
+            {user && (
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-foreground">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{user.email}</p>
+              </div>
+            )}
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Log out
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <main className="container mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto space-y-8">
           {!selectedOrg && !showOrganizations && (
             <>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Welcome, {user?.name}!</CardTitle>
-                  <CardDescription>You're successfully logged in to your account</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Name</p>
-                    <p className="text-foreground">{user?.name}</p>
+              <Card className="border-2 border-primary/20 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl">Welcome back, {user?.name}!</CardTitle>
+                      <CardDescription className="text-base">You're successfully logged in to your account</CardDescription>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="text-foreground">{user?.email}</p>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium text-muted-foreground">Full Name</p>
+                      </div>
+                      <p className="text-lg font-semibold text-foreground">{user?.name}</p>
+                    </div>
+                    <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium text-muted-foreground">Email Address</p>
+                      </div>
+                      <p className="text-lg font-semibold text-foreground">{user?.email}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                  <CardDescription>Manage your account and organizations</CardDescription>
+              <Card className="shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                      <Settings className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Quick Actions</CardTitle>
+                      <CardDescription>Manage your account and organizations</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <Button onClick={() => setShowOrganizations(true)} className="w-full">
-                      Manage Organizations
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Button 
+                      onClick={() => setShowOrganizations(true)} 
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                      variant="default"
+                    >
+                      <Building2 className="h-6 w-6" />
+                      <span className="font-medium text-sm">Organizations</span>
                     </Button>
-                    <Button onClick={() => router.push("/requests/send")} variant="outline" className="w-full">
-                      Organization Requests
+                    <Button 
+                      onClick={() => router.push("/requests/send")} 
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                      variant="outline"
+                    >
+                      <Users className="h-6 w-6" />
+                      <span className="font-medium text-sm">Requests</span>
                     </Button>
-                    <Button onClick={() => router.push("/roles")} variant="outline" className="w-full">
-                      Roles & Permissions
+                    <Button 
+                      onClick={() => router.push("/roles")} 
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                      variant="outline"
+                    >
+                      <Shield className="h-6 w-6" />
+                      <span className="font-medium text-sm">Roles</span>
                     </Button>
-                    <Button onClick={() => router.push("/teams")} variant="outline" className="w-full">
-                      Teams Management
+                    <Button 
+                      onClick={() => router.push("/teams")} 
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                      variant="outline"
+                    >
+                      <Users className="h-6 w-6" />
+                      <span className="font-medium text-sm">Teams</span>
                     </Button>
                   </div>
                 </CardContent>
@@ -140,10 +203,17 @@ export default function DashboardPage() {
           )}
 
           {showOrganizations && !selectedOrg && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Organizations</CardTitle>
-                <CardDescription>Select an organization to manage</CardDescription>
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Organizations</CardTitle>
+                    <CardDescription>Select an organization to manage</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {organizationsLoading && (
@@ -216,27 +286,59 @@ export default function DashboardPage() {
           )}
 
           {selectedOrg && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedOrg.name} Management</CardTitle>
-                <CardDescription>Manage this organization's resources and settings</CardDescription>
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <Building2 className="h-7 w-7 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl">{selectedOrg.name} Management</CardTitle>
+                    <CardDescription className="text-base">Manage this organization's resources and settings</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/requests/send`)} className="w-full">
-                    Organization Requests
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/requests/send`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="default"
+                  >
+                    <Users className="h-6 w-6" />
+                    <span className="font-medium">Requests</span>
                   </Button>
-                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/roles`)} variant="outline" className="w-full">
-                    Roles & Permissions
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/roles`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="outline"
+                  >
+                    <Shield className="h-6 w-6" />
+                    <span className="font-medium">Roles & Permissions</span>
                   </Button>
-                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/teams`)} variant="outline" className="w-full">
-                    Teams Management
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/teams`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="outline"
+                  >
+                    <Users className="h-6 w-6" />
+                    <span className="font-medium">Teams</span>
                   </Button>
-                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/workspaces`)} variant="outline" className="w-full">
-                    Workspaces Management
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/workspaces`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="outline"
+                  >
+                    <FolderOpen className="h-6 w-6" />
+                    <span className="font-medium">Workspaces</span>
                   </Button>
-                  <Button onClick={() => router.push(`/organizations/${selectedOrg.id}/issue-types`)} variant="outline" className="w-full">
-                    Issue Types Management
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/issue-types`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="outline"
+                  >
+                    <Bug className="h-6 w-6" />
+                    <span className="font-medium">Issue Types</span>
                   </Button>
                 </div>
               </CardContent>

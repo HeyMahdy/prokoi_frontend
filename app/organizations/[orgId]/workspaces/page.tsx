@@ -35,6 +35,7 @@ export default function OrganizationWorkspacesPage() {
     router.push(`/workspaces/${workspaceId}/projects`)
   }
 
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -63,7 +64,10 @@ export default function OrganizationWorkspacesPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
           <CreateWorkspaceForm orgId={orgId} onWorkspaceCreated={handleWorkspaceCreated} />
-          <WorkspacesTable orgId={orgId} onWorkspaceSelect={handleWorkspaceSelect} />
+          <WorkspacesTable 
+            orgId={orgId} 
+            onWorkspaceSelect={handleWorkspaceSelect}
+          />
         </div>
       </main>
     </div>

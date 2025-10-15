@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Info, Filter, X } from "lucide-react"
+import { Info, Filter, X, User, Edit, CheckCircle } from "lucide-react"
 import useSWR from "swr"
 import { fetchWithAuth } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 interface Issue {
   id: number
@@ -25,6 +26,12 @@ interface Issue {
   parent_issue_id: number | null
   created_at: string
   updated_at: string
+  assigned_to?: number | null
+  assigned_user?: {
+    id: number
+    name: string
+    email: string
+  } | null
 }
 
 interface IssueType {
@@ -41,6 +48,7 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [hasFilters, setHasFilters] = useState(false)
+  const { toast } = useToast()
 
   // Build query parameters
   const queryParams = new URLSearchParams()
@@ -60,6 +68,30 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
 
   // Fetch issue types for filter
   const { data: issueTypes } = useSWR<IssueType[]>("/api/issue-types", fetchWithAuth)
+
+  const handleStatusUpdate = async (issueId: number, newStatus: string) => {
+    try {
+      await fetchWithAuth(`/api/issues/${issueId}/status`, {
+        method: "PUT",
+        body: JSON.stringify({
+          status: newStatus
+        })
+      })
+
+      toast({
+        title: "Success",
+        description: "Issue status updated successfully"
+      })
+
+      mutate() // Refresh the data
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to update issue status",
+        variant: "destructive"
+      })
+    }
+  }
 
   const statusOptions = [
     { value: "open", label: "Open" },
@@ -267,8 +299,10 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
                     <TableHead>Status</TableHead>
                     <TableHead>Priority</TableHead>
                     <TableHead>Points</TableHead>
+                    <TableHead>Assigned To</TableHead>
                     <TableHead>Parent</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -304,6 +338,19 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
                         )}
                       </TableCell>
                       <TableCell>
+                        {issue.assigned_user ? (
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium text-sm">{issue.assigned_user.name}</div>
+                              <div className="text-xs text-muted-foreground">{issue.assigned_user.email}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         {issue.parent_issue_id ? (
                           <Badge variant="outline">Sub-issue</Badge>
                         ) : (
@@ -312,6 +359,25 @@ export function IssuesTable({ projectId }: IssuesTableProps) {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatDate(issue.created_at)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={issue.status}
+                            onValueChange={(newStatus) => handleStatusUpdate(issue.id, newStatus)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map((status) => (
+                                <SelectItem key={status.value} value={status.value}>
+                                  {status.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

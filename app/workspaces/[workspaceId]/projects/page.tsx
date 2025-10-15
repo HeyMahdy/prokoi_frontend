@@ -30,6 +30,14 @@ export default function WorkspaceProjectsPage() {
     mutate(`/api/workspaces/${workspaceId}/projects`)
   }
 
+  const handleMyIssues = (projectId: number) => {
+    router.push(`/workspaces/${workspaceId}/projects/${projectId}/my-issues`)
+  }
+
+  const handleAssignIssues = (projectId: number) => {
+    router.push(`/workspaces/${workspaceId}/projects/${projectId}/assign-issues`)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
@@ -52,7 +60,11 @@ export default function WorkspaceProjectsPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
           <CreateProjectForm workspaceId={workspaceId} onProjectCreated={handleProjectCreated} />
-          <ProjectsTable workspaceId={workspaceId} />
+          <ProjectsTable 
+            workspaceId={workspaceId} 
+            onMyIssues={handleMyIssues}
+            onAssignIssues={handleAssignIssues}
+          />
         </div>
       </main>
     </div>
