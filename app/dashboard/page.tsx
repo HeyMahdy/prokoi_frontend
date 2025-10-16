@@ -165,6 +165,14 @@ export default function DashboardPage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <Button 
+                      onClick={() => router.push("/profile")} 
+                      className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                      variant="outline"
+                    >
+                      <User className="h-6 w-6" />
+                      <span className="font-medium text-sm">Profile</span>
+                    </Button>
+                    <Button 
                       onClick={() => setShowOrganizations(true)} 
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="default"
