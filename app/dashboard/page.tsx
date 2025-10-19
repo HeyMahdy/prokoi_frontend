@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Building2, LogOut, User, Mail, Users, Settings, Shield, Layers, FolderOpen, Bug, BarChart3 } from "lucide-react"
 import { ProjectsAnalysisOverview } from "@/components/dashboard/projects-analysis-overview"
 import { SprintVelocityCard } from "@/components/sprints/sprint-velocity-card"
+import { UserPerformanceCard } from "@/components/users/user-performance-card"
 
 interface Organization {
   id: number
@@ -159,6 +160,9 @@ export default function DashboardPage() {
 
               {/* Sprint Velocity Analysis */}
               <SprintVelocityCard showDetailed={false} />
+
+              {/* User Performance Analysis */}
+              <UserPerformanceCard showDetailed={false} />
 
               <Card className="shadow-lg">
                 <CardHeader className="pb-4">
