@@ -188,22 +188,22 @@ export function ProjectsTable({ workspaceId, onMyIssues, onAssignIssues }: Proje
                         <TableCell>{new Date(project.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(project.updated_at).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm" asChild>
+                          <div className="flex flex-wrap gap-1">
+                            <Button variant="outline" size="sm" asChild className="text-xs px-2 py-1 h-7">
                               <Link href={`/organizations/${project.organization_id}/workspaces/${project.workspace_id}/projects/${project.id}/issues`}>
-                                <Bug className="h-4 w-4 mr-2" />
+                                <Bug className="h-3 w-3 mr-1" />
                                 Issues
                               </Link>
                             </Button>
-                            <Button variant="outline" size="sm" asChild>
+                            <Button variant="outline" size="sm" asChild className="text-xs px-2 py-1 h-7">
                               <Link href={`/workspaces/${project.workspace_id}/projects/${project.id}/teams`}>
-                                <Users className="h-4 w-4 mr-2" />
+                                <Users className="h-3 w-3 mr-1" />
                                 Teams
                               </Link>
                             </Button>
-                            <Button variant="outline" size="sm" asChild>
+                            <Button variant="outline" size="sm" asChild className="text-xs px-2 py-1 h-7">
                               <Link href={`/workspaces/${project.workspace_id}/projects/${project.id}/sprints`}>
-                                <Layers className="h-4 w-4 mr-2" />
+                                <Layers className="h-3 w-3 mr-1" />
                                 Sprints
                               </Link>
                             </Button>
@@ -212,8 +212,9 @@ export function ProjectsTable({ workspaceId, onMyIssues, onAssignIssues }: Proje
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => onMyIssues(project.id)}
+                                className="text-xs px-2 py-1 h-7"
                               >
-                                <User className="h-4 w-4 mr-2" />
+                                <User className="h-3 w-3 mr-1" />
                                 My Issues
                               </Button>
                             )}
@@ -222,9 +223,10 @@ export function ProjectsTable({ workspaceId, onMyIssues, onAssignIssues }: Proje
                                 variant="outline" 
                                 size="sm"
                                 onClick={() => onAssignIssues(project.id)}
+                                className="text-xs px-2 py-1 h-7"
                               >
-                                <User className="h-4 w-4 mr-2" />
-                                Assign Issues
+                                <User className="h-3 w-3 mr-1" />
+                                Assign
                               </Button>
                             )}
                           </div>

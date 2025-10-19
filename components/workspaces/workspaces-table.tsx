@@ -25,30 +25,21 @@ interface WorkspacesTableProps {
 }
 
 export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTableProps) {
-  console.log("🔍 WorkspacesTable rendered with orgId:", orgId)
-  
   const apiUrl = `/api/organizations/${orgId}/workspaces`
-  console.log("🌐 API URL for workspaces:", apiUrl)
   
   const { data, error, isLoading } = useSWR<any>(
     apiUrl,
     fetchWithAuth,
   )
-  
-  console.log("📊 Workspaces SWR state:", { data, error, isLoading })
 
   // Normalize the data similar to teams
   const normalizedWorkspaces: Workspace[] = (() => {
     if (!data) {
-      console.log("No workspaces data")
       return []
     }
     
-    console.log("Raw workspaces data:", data)
-    
     // Handle direct array response (most common case)
     if (Array.isArray(data)) {
-      console.log("Workspaces is direct array:", data)
       return data.map((w: any) => ({
         id: w.id,
         name: w.name,
@@ -61,7 +52,6 @@ export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTablePro
     
     // Handle wrapped responses
     if (data.items && Array.isArray(data.items)) {
-      console.log("Workspaces has items array:", data.items)
       return data.items.map((w: any) => ({
         id: w.id,
         name: w.name,
@@ -73,7 +63,6 @@ export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTablePro
     }
     
     if (data.data && Array.isArray(data.data)) {
-      console.log("Workspaces has data array:", data.data)
       return data.data.map((w: any) => ({
         id: w.id,
         name: w.name,
@@ -84,25 +73,14 @@ export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTablePro
       })).filter((w) => w.id && w.name)
     }
     
-    console.log("Workspaces data doesn't match expected format:", data)
     return []
   })()
-
-  console.log("Normalized workspaces:", normalizedWorkspaces)
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Organization Workspaces</CardTitle>
         <CardDescription>All workspaces for this organization</CardDescription>
-        <div className="text-xs text-muted-foreground">
-          DEBUG: orgId={orgId}, workspaces={data ? 'loaded' : 'loading'}, count={normalizedWorkspaces.length}
-        </div>
-        {data && (
-          <div className="text-xs bg-gray-100 p-2 rounded mt-2">
-            <strong>Raw data:</strong> {JSON.stringify(data, null, 2)}
-          </div>
-        )}
       </CardHeader>
       <CardContent>
         {error && (
