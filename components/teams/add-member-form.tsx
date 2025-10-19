@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { mutate } from "swr"
 
 interface User {
   id: number
@@ -82,6 +83,9 @@ export function AddMemberForm({ teamId, orgId }: AddMemberFormProps) {
       })
 
       setUserId("")
+      // Revalidate members and organization users
+      mutate(`/api/teams/${teamId}/members`)
+      if (orgId) mutate(`/api/organizations/${orgId}/users`)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to add member"
       setError(errorMessage)

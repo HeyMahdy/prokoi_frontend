@@ -7,6 +7,8 @@ import { CreateTeamForm } from "@/components/teams/create-team-form"
 import { TeamsTable } from "@/components/teams/teams-table"
 import { AddMemberForm } from "@/components/teams/add-member-form"
 import { MembersTable } from "@/components/teams/members-table"
+import { AssignTeamToWorkspaceForm } from "@/components/teams/assign-team-to-workspace-form"
+import { AssignTeamToProjectForm } from "@/components/teams/assign-team-to-project-form"
 
 export default function OrganizationTeamsPage() {
   const router = useRouter()
@@ -55,6 +57,12 @@ export default function OrganizationTeamsPage() {
           <TeamsTable orgId={orgId} onTeamSelect={setSelectedTeamId} />
           {selectedTeamId && <AddMemberForm teamId={selectedTeamId} orgId={orgId} />}
           {selectedTeamId && <MembersTable teamId={selectedTeamId} />}
+          {selectedTeamId && <AssignTeamToWorkspaceForm orgId={orgId} teamId={selectedTeamId} />}
+          {selectedTeamId && (
+            <div className="space-y-4">
+              <AssignTeamToProjectForm orgId={orgId} teamId={selectedTeamId} />
+            </div>
+          )}
         </div>
       </main>
     </div>

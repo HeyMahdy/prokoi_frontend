@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertCircle, Bug, User, Layers } from "lucide-react"
+import { AlertCircle, Bug, User, Layers, Users } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { mutate } from "swr"
 import { Button } from "@/components/ui/button"
@@ -193,6 +193,12 @@ export function ProjectsTable({ workspaceId, onMyIssues, onAssignIssues }: Proje
                               <Link href={`/organizations/${project.organization_id}/workspaces/${project.workspace_id}/projects/${project.id}/issues`}>
                                 <Bug className="h-4 w-4 mr-2" />
                                 Issues
+                              </Link>
+                            </Button>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/workspaces/${project.workspace_id}/projects/${project.id}/teams`}>
+                                <Users className="h-4 w-4 mr-2" />
+                                Teams
                               </Link>
                             </Button>
                             <Button variant="outline" size="sm" asChild>

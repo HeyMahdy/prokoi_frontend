@@ -96,7 +96,7 @@ export default function AssignedIssuesPage() {
   
   const queryString = queryParams.toString()
   const apiUrl = user 
-    ? `/api/users/${user.id}/assigned-issues${queryString ? `?${queryString}` : ""}`
+    ? `/api/users/assigned-issues${queryString ? `?${queryString}` : ""}`
     : null
 
   const { data: issues, error, isLoading, mutate } = useSWR<Issue[]>(

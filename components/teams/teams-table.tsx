@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { AlertCircle, Loader2 } from "lucide-react"
 
 interface Team {
@@ -70,15 +71,22 @@ export function TeamsTable({ orgId, onTeamSelect }: TeamsTableProps) {
                         <TableCell>{team.name}</TableCell>
                         <TableCell>{team.organization_id}</TableCell>
                         <TableCell>
-                          {onTeamSelect && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onTeamSelect(team.id)}
-                            >
-                              Manage Members
+                          <div className="flex gap-2">
+                            {onTeamSelect && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onTeamSelect(team.id)}
+                              >
+                                Manage Members
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/organizations/${team.organization_id}/teams/${team.id}/velocity`}>
+                                Velocity
+                              </Link>
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

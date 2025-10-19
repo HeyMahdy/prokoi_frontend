@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { AlertCircle, User } from "lucide-react"
+import { AlertCircle, User, Users } from "lucide-react"
+import Link from "next/link"
 
 interface Workspace {
   id: number
@@ -24,16 +25,84 @@ interface WorkspacesTableProps {
 }
 
 export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTableProps) {
-  const { data, error, isLoading } = useSWR<Workspace[]>(
-    `/api/organizations/${orgId}/workspaces`,
+  console.log("🔍 WorkspacesTable rendered with orgId:", orgId)
+  
+  const apiUrl = `/api/organizations/${orgId}/workspaces`
+  console.log("🌐 API URL for workspaces:", apiUrl)
+  
+  const { data, error, isLoading } = useSWR<any>(
+    apiUrl,
     fetchWithAuth,
   )
+  
+  console.log("📊 Workspaces SWR state:", { data, error, isLoading })
+
+  // Normalize the data similar to teams
+  const normalizedWorkspaces: Workspace[] = (() => {
+    if (!data) {
+      console.log("No workspaces data")
+      return []
+    }
+    
+    console.log("Raw workspaces data:", data)
+    
+    // Handle direct array response (most common case)
+    if (Array.isArray(data)) {
+      console.log("Workspaces is direct array:", data)
+      return data.map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        user_id: w.user_id,
+        organization_id: w.organization_id,
+        created_at: w.created_at,
+        updated_at: w.updated_at
+      })).filter((w) => w.id && w.name)
+    }
+    
+    // Handle wrapped responses
+    if (data.items && Array.isArray(data.items)) {
+      console.log("Workspaces has items array:", data.items)
+      return data.items.map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        user_id: w.user_id,
+        organization_id: w.organization_id,
+        created_at: w.created_at,
+        updated_at: w.updated_at
+      })).filter((w) => w.id && w.name)
+    }
+    
+    if (data.data && Array.isArray(data.data)) {
+      console.log("Workspaces has data array:", data.data)
+      return data.data.map((w: any) => ({
+        id: w.id,
+        name: w.name,
+        user_id: w.user_id,
+        organization_id: w.organization_id,
+        created_at: w.created_at,
+        updated_at: w.updated_at
+      })).filter((w) => w.id && w.name)
+    }
+    
+    console.log("Workspaces data doesn't match expected format:", data)
+    return []
+  })()
+
+  console.log("Normalized workspaces:", normalizedWorkspaces)
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Organization Workspaces</CardTitle>
         <CardDescription>All workspaces for this organization</CardDescription>
+        <div className="text-xs text-muted-foreground">
+          DEBUG: orgId={orgId}, workspaces={data ? 'loaded' : 'loading'}, count={normalizedWorkspaces.length}
+        </div>
+        {data && (
+          <div className="text-xs bg-gray-100 p-2 rounded mt-2">
+            <strong>Raw data:</strong> {JSON.stringify(data, null, 2)}
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {error && (
@@ -51,9 +120,9 @@ export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTablePro
           </div>
         )}
 
-        {data && !isLoading && (
+        {!isLoading && (
           <>
-            {data.length === 0 ? (
+            {normalizedWorkspaces.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No workspaces found for this organization</p>
             ) : (
               <div className="rounded-md border">
@@ -67,21 +136,29 @@ export function WorkspacesTable({ orgId, onWorkspaceSelect }: WorkspacesTablePro
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data.map((workspace) => (
+                    {normalizedWorkspaces.map((workspace) => (
                       <TableRow key={workspace.id}>
                         <TableCell className="font-medium">{workspace.name}</TableCell>
                         <TableCell>{new Date(workspace.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(workspace.updated_at).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          {onWorkspaceSelect && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onWorkspaceSelect(workspace.id)}
-                            >
-                              Manage Projects
+                          <div className="flex gap-2">
+                            {onWorkspaceSelect && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onWorkspaceSelect(workspace.id)}
+                              >
+                                Manage Projects
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/organizations/${workspace.organization_id}/workspaces/${workspace.id}/teams`}>
+                                <Users className="h-4 w-4 mr-2" />
+                                Teams
+                              </Link>
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

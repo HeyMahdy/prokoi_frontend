@@ -9,7 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Building2, LogOut, User, Mail, Users, Settings, Shield, Layers, FolderOpen, Bug } from "lucide-react"
+import { AlertCircle, Building2, LogOut, User, Mail, Users, Settings, Shield, Layers, FolderOpen, Bug, BarChart3 } from "lucide-react"
+import { ProjectsAnalysisOverview } from "@/components/dashboard/projects-analysis-overview"
 
 interface Organization {
   id: number
@@ -149,6 +150,11 @@ export default function DashboardPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Projects Analysis Overview - Only show if user has selected an organization */}
+              {selectedOrg && (
+                <ProjectsAnalysisOverview organizationId={(selectedOrg as Organization).id} maxProjects={3} />
+              )}
 
               <Card className="shadow-lg">
                 <CardHeader className="pb-4">
@@ -347,6 +353,14 @@ export default function DashboardPage() {
                   >
                     <Bug className="h-6 w-6" />
                     <span className="font-medium">Issue Types</span>
+                  </Button>
+                  <Button 
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/analysis`)} 
+                    className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
+                    variant="outline"
+                  >
+                    <BarChart3 className="h-6 w-6" />
+                    <span className="font-medium">Analysis</span>
                   </Button>
                 </div>
               </CardContent>

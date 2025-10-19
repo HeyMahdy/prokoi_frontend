@@ -84,14 +84,11 @@ export default function MyIssuesPage() {
     }
   }, [])
 
-  // Fetch all issues from this project
-  const { data: allIssues, error, isLoading, mutate } = useSWR<Issue[]>(
-    projectId ? `/api/projects/${projectId}/issues` : null,
+  // Fetch assigned issues for current user in this project
+  const { data: assignedIssues, error, isLoading, mutate } = useSWR<Issue[]>(
+    user && projectId ? `/api/users/assigned-issues?project_id=${projectId}` : null,
     fetchWithAuth
   )
-
-  // Filter issues assigned to current user
-  const assignedIssues = allIssues?.filter(issue => issue.assigned_to === user?.id) || []
 
   const handleStatusUpdate = async (issueId: number, newStatus: string) => {
     try {
@@ -240,7 +237,7 @@ export default function MyIssuesPage() {
             <CardDescription>
               {isLoading 
                 ? "Loading your assigned issues..." 
-                : `You have ${assignedIssues.length} assigned issues in this project`
+                : `You have ${assignedIssues?.length || 0} assigned issues in this project`
               }
             </CardDescription>
           </CardHeader>

@@ -12,6 +12,8 @@ interface TeamMember {
   id: number
   team_id: number
   user_id: number
+  name?: string
+  email?: string
 }
 
 interface User {
@@ -80,11 +82,13 @@ export function MembersTable({ teamId }: MembersTableProps) {
                   <TableBody>
                     {membersData.map((member) => {
                       const user = userMap?.[member.user_id]
+                      const displayName = member.name || user?.name
+                      const displayEmail = member.email || user?.email
                       return (
                         <TableRow key={member.id}>
                           <TableCell className="font-medium">{member.id}</TableCell>
-                          <TableCell>{user?.name || "Loading..."}</TableCell>
-                          <TableCell>{user?.email || "Loading..."}</TableCell>
+                          <TableCell>{displayName || "-"}</TableCell>
+                          <TableCell>{displayEmail || "-"}</TableCell>
                           <TableCell>{member.user_id}</TableCell>
                           <TableCell>{member.team_id}</TableCell>
                         </TableRow>
