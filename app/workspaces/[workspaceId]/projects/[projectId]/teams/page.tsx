@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR from "swr"
-import { useEffect } from "react"
+import { useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { fetchWithAuth } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,10 +19,40 @@ export default function ProjectTeamsPage() {
   const router = useRouter()
   const projectId = Number(params.projectId)
 
-  const { data, error, isLoading } = useSWR<Team[]>(
+  const { data, error, isLoading } = useSWR<any>(
     Number.isFinite(projectId) ? `/api/projects/${projectId}/teams` : null,
     fetchWithAuth,
   )
+
+  // Normalize the teams data
+  const normalizedTeams: Team[] = useMemo(() => {
+    if (!data) return []
+    
+    // Handle direct array response
+    if (Array.isArray(data)) {
+      return data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t) => t.id)
+    }
+    
+    // Handle wrapped responses
+    if (data.items && Array.isArray(data.items)) {
+      return data.items.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
+    }
+    
+    if (data.data && Array.isArray(data.data)) {
+      return data.data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
+    }
+    
+    return []
+  }, [data])
 
   // No project details fetch required; we rely on workspaceId from the URL
 
@@ -63,7 +93,7 @@ export default function ProjectTeamsPage() {
               <AlertDescription>{error.message || "Failed to load teams"}</AlertDescription>
             </Alert>
           )}
-          {data && (
+          {normalizedTeams && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -73,13 +103,13 @@ export default function ProjectTeamsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((team) => (
+                  {normalizedTeams.map((team) => (
                     <TableRow key={team.id}>
                       <TableCell className="font-medium">{team.id}</TableCell>
                       <TableCell>{team.name}</TableCell>
                     </TableRow>
                   ))}
-                  {data.length === 0 && (
+                  {normalizedTeams.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={2} className="text-sm text-muted-foreground text-center">No teams assigned</TableCell>
                     </TableRow>

@@ -36,13 +36,16 @@ export function AssignTeamToProjectForm({ orgId, teamId }: { orgId: number; team
     if (!projectId) return
     setIsSubmitting(true)
     try {
-      await fetchWithAuth(`/api/projects/${projectId}/teams`, {
+      const params = new URLSearchParams({ team_id: String(teamId) })
+      await fetchWithAuth(`/api/projects/${projectId}/teams?${params.toString()}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team_id: teamId }),
       })
       toast({ title: "Assigned", description: "Team assigned to project" })
-      mutate(`/api/teams/${teamId}/projects`)
+      // Reset form
+      setProjectId("")
+      setWorkspaceId("")
+      // Refresh data
+      window.location.reload()
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Failed to assign team", variant: "destructive" })
     } finally {

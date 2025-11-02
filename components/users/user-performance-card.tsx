@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import useSWR from "swr"
 import { fetchWithAuth } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { AlertCircle, TrendingUp, User, Mail, CheckCircle, Clock, MessageSquare, Activity, Target, BarChart3, Users } from "lucide-react"
+import { AlertCircle, TrendingUp, User, Mail, CheckCircle, Clock, MessageSquare, Activity, Target, BarChart3, Users, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 
 interface UserPerformanceData {
@@ -36,6 +37,7 @@ interface UserPerformanceCardProps {
 }
 
 export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCardProps) {
+  const [showAllStats, setShowAllStats] = useState(false)
   const { data: userData, error, isLoading } = useSWR<UserPerformanceData[]>(
     "/api/users/performance",
     fetchWithAuth
@@ -159,12 +161,22 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
             </CardTitle>
             <CardDescription>Performance metrics across all team members</CardDescription>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/users/performance">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              View All
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowAllStats(!showAllStats)}
+            >
+              {showAllStats ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
+              {showAllStats ? 'Hide Stats' : 'View All Stats'}
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/users/performance">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                View All
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -203,6 +215,47 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
           </div>
         </div>
 
+        {/* Additional detailed metrics when in detailed view */}
+        {showDetailed && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+            <div className="text-center">
+              <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-lg mx-auto mb-2">
+                <Clock className="h-4 w-4 text-red-600" />
+              </div>
+              <div className="text-lg font-semibold">{totalIssues - totalCompletedIssues}</div>
+              <div className="text-xs text-muted-foreground">Open Issues</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="flex items-center justify-center w-8 h-8 bg-indigo-100 rounded-lg mx-auto mb-2">
+                <Target className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div className="text-lg font-semibold">{totalCompletedStoryPoints}</div>
+              <div className="text-xs text-muted-foreground">Completed SP</div>
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center w-8 h-8 bg-cyan-100 rounded-lg mx-auto mb-2">
+                <MessageSquare className="h-4 w-4 text-cyan-600" />
+              </div>
+              <div className="text-lg font-semibold">
+                {users.reduce((sum, user) => sum + user.comments_made, 0)}
+              </div>
+              <div className="text-xs text-muted-foreground">Total Comments</div>
+            </div>
+
+            <div className="text-center">
+              <div className="flex items-center justify-center w-8 h-8 bg-pink-100 rounded-lg mx-auto mb-2">
+                <Activity className="h-4 w-4 text-pink-600" />
+              </div>
+              <div className="text-lg font-semibold">
+                {users.reduce((sum, user) => sum + user.activities_logged, 0)}
+              </div>
+              <div className="text-xs text-muted-foreground">Total Activities</div>
+            </div>
+          </div>
+        )}
+
         {/* Overall Progress */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -222,10 +275,131 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
           </div>
         </div>
 
+        {/* Comprehensive Stats Section when showAllStats is true */}
+        {showAllStats && (
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+            <h4 className="text-sm font-medium flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Comprehensive Performance Analytics
+            </h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Issue Management</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Total Issues Assigned</span>
+                    <span className="font-semibold">{totalIssues}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Issues Completed</span>
+                    <span className="font-semibold text-green-600">{totalCompletedIssues}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Issues Remaining</span>
+                    <span className="font-semibold text-orange-600">{totalIssues - totalCompletedIssues}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Completion Rate</span>
+                    <span className="font-semibold">
+                      {totalIssues > 0 ? Math.round((totalCompletedIssues / totalIssues) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Story Points</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Total Story Points</span>
+                    <span className="font-semibold">{totalStoryPoints}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Completed Story Points</span>
+                    <span className="font-semibold text-green-600">{totalCompletedStoryPoints}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Remaining Story Points</span>
+                    <span className="font-semibold text-orange-600">{totalStoryPoints - totalCompletedStoryPoints}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Story Points Completion</span>
+                    <span className="font-semibold">
+                      {totalStoryPoints > 0 ? Math.round((totalCompletedStoryPoints / totalStoryPoints) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Team Activity</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Total Comments</span>
+                    <span className="font-semibold">{users.reduce((sum, user) => sum + user.comments_made, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Total Activities</span>
+                    <span className="font-semibold">{users.reduce((sum, user) => sum + user.activities_logged, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Average Comments per User</span>
+                    <span className="font-semibold">
+                      {users.length > 0 ? Math.round(users.reduce((sum, user) => sum + user.comments_made, 0) / users.length) : 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Average Activities per User</span>
+                    <span className="font-semibold">
+                      {users.length > 0 ? Math.round(users.reduce((sum, user) => sum + user.activities_logged, 0) / users.length) : 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h5 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Time Tracking</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Users with Time Data</span>
+                    <span className="font-semibold">
+                      {users.filter(user => user.weekly_hours || user.total_hours_spent).length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Total Hours Tracked</span>
+                    <span className="font-semibold">
+                      {users.reduce((sum, user) => sum + (user.total_hours_spent || 0), 0)}h
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Average Weekly Hours</span>
+                    <span className="font-semibold">
+                      {(() => {
+                        const usersWithHours = users.filter(user => user.weekly_hours);
+                        return usersWithHours.length > 0 
+                          ? Math.round(usersWithHours.reduce((sum, user) => sum + (user.weekly_hours || 0), 0) / usersWithHours.length)
+                          : 0;
+                      })()}h
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Average Days Since Joined</span>
+                    <span className="font-semibold">
+                      {users.length > 0 ? Math.round(users.reduce((sum, user) => sum + user.days_since_joined, 0) / users.length) : 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* User Performance List */}
         <div className="space-y-4">
           <h4 className="text-sm font-medium">Team Performance</h4>
-          {users.slice(0, showDetailed ? 20 : 5).map((user, index) => {
+          {users.slice(0, showDetailed ? 50 : 5).map((user, index) => {
             const completionRate = user.assigned_issues > 0 
               ? Math.round((user.completed_issues / user.assigned_issues) * 100) 
               : 0
@@ -267,6 +441,73 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
                   </div>
                 </div>
 
+                {/* Additional detailed metrics when in detailed view */}
+                {showDetailed && showAllStats && (
+                  <>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2 border-t">
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">{user.open_issues}</div>
+                        <div className="text-xs text-muted-foreground">Open Issues</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">{user.completed_story_points}</div>
+                        <div className="text-xs text-muted-foreground">Completed SP</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">{user.avg_story_points_per_issue.toFixed(1)}</div>
+                        <div className="text-xs text-muted-foreground">Avg SP/Issue</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">{user.activities_logged}</div>
+                        <div className="text-xs text-muted-foreground">Activities</div>
+                      </div>
+                    </div>
+
+                    {/* Time tracking metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t">
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">
+                          {user.weekly_hours ? `${user.weekly_hours}h` : 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Weekly Hours</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">
+                          {user.total_hours_spent ? `${user.total_hours_spent}h` : 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total Hours</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-semibold">{user.days_since_joined}</div>
+                        <div className="text-xs text-muted-foreground">Days Since Joined</div>
+                      </div>
+                    </div>
+
+                    {/* Performance breakdown */}
+                    <div className="space-y-2 pt-2 border-t">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>Story Points Completion</span>
+                        <span>
+                          {user.total_story_points_assigned > 0 
+                            ? Math.round((user.completed_story_points / user.total_story_points_assigned) * 100)
+                            : 0}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={user.total_story_points_assigned > 0 
+                          ? (user.completed_story_points / user.total_story_points_assigned) * 100 
+                          : 0} 
+                        className="h-1" 
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{user.completed_story_points} completed</span>
+                        <span>{user.total_story_points_assigned - user.completed_story_points} remaining</span>
+                        <span>{user.total_story_points_assigned} total SP</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span>Completion Progress</span>
@@ -291,11 +532,14 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
                         View Profile
                       </Link>
                     </Button>
-                    <Button variant="outline" size="sm" asChild className="flex-1">
-                      <Link href="/users/performance">
-                        <BarChart3 className="h-3 w-3 mr-1" />
-                        View All Stats
-                      </Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => setShowAllStats(!showAllStats)}
+                    >
+                      {showAllStats ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
+                      {showAllStats ? 'Hide Stats' : 'View All Stats'}
                     </Button>
                   </div>
                 )}
@@ -304,7 +548,7 @@ export function UserPerformanceCard({ showDetailed = false }: UserPerformanceCar
           })}
         </div>
 
-        {users.length > (showDetailed ? 20 : 5) && (
+        {users.length > (showDetailed ? 50 : 5) && (
           <div className="text-center">
             <Button variant="outline" asChild>
               <Link href="/users/performance">

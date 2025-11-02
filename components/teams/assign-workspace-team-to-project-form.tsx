@@ -15,22 +15,17 @@ interface Project { id: number; name: string }
 interface TeamProject { team_id: number; project_id: number }
 
 export function AssignWorkspaceTeamToProjectForm({ workspaceId }: { workspaceId: number }) {
-  console.log("🔍 AssignWorkspaceTeamToProjectForm rendered with workspaceId:", workspaceId)
-  
   const { toast } = useToast()
   const [teamId, setTeamId] = useState<string>("")
   const [projectId, setProjectId] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const apiUrl = Number.isFinite(workspaceId) ? `/api/workspaces/${workspaceId}/teams` : null
-  console.log("🌐 API URL for teams:", apiUrl)
   
   const { data: teams, error: teamsError, isLoading: teamsLoading } = useSWR<any>(
     apiUrl,
     fetchWithAuth,
   )
-  
-  console.log("📊 SWR teams state:", { teams, teamsError, teamsLoading })
   const { data: projects, error: projectsError, isLoading: projectsLoading } = useSWR<any>(
     Number.isFinite(workspaceId) ? `/api/workspaces/${workspaceId}/projects` : null,
     fetchWithAuth,
@@ -42,31 +37,32 @@ export function AssignWorkspaceTeamToProjectForm({ workspaceId }: { workspaceId:
 
   const normalizedTeams: WorkspaceTeam[] = useMemo(() => {
     if (!teams) {
-      console.log("Teams data: null/undefined")
       return []
     }
     
     // Handle direct array response (most common case)
     if (Array.isArray(teams)) {
-      const result = teams.map((t: any) => ({ id: t.id, name: t.name })).filter((t) => t.id && t.name)
-      console.log("Teams data:", teams, "Normalized:", result)
-      return result
+      return teams.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t) => t.id)
     }
     
     // Handle wrapped responses
     if (teams.items && Array.isArray(teams.items)) {
-      const result = teams.items.map((t: any) => ({ id: t.id, name: t.name })).filter((t: any) => t.id && t.name)
-      console.log("Teams data (items):", teams, "Normalized:", result)
-      return result
+      return teams.items.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
     }
     
     if (teams.data && Array.isArray(teams.data)) {
-      const result = teams.data.map((t: any) => ({ id: t.id, name: t.name })).filter((t: any) => t.id && t.name)
-      console.log("Teams data (data):", teams, "Normalized:", result)
-      return result
+      return teams.data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
     }
     
-    console.log("Teams data (unexpected format):", teams)
     return []
   }, [teams])
 
@@ -75,16 +71,25 @@ export function AssignWorkspaceTeamToProjectForm({ workspaceId }: { workspaceId:
     
     // Handle direct array response (most common case)
     if (Array.isArray(projects)) {
-      return projects.map((p: any) => ({ id: p.id, name: p.name })).filter((p) => p.id && p.name)
+      return projects.map((p: any) => ({ 
+        id: p.id, 
+        name: p.name || `Project ${p.id}` 
+      })).filter((p) => p.id)
     }
     
     // Handle wrapped responses
     if (projects.items && Array.isArray(projects.items)) {
-      return projects.items.map((p: any) => ({ id: p.id, name: p.name })).filter((p: any) => p.id && p.name)
+      return projects.items.map((p: any) => ({ 
+        id: p.id, 
+        name: p.name || `Project ${p.id}` 
+      })).filter((p: any) => p.id)
     }
     
     if (projects.data && Array.isArray(projects.data)) {
-      return projects.data.map((p: any) => ({ id: p.id, name: p.name })).filter((p: any) => p.id && p.name)
+      return projects.data.map((p: any) => ({ 
+        id: p.id, 
+        name: p.name || `Project ${p.id}` 
+      })).filter((p: any) => p.id)
     }
     
     return []
@@ -100,9 +105,16 @@ export function AssignWorkspaceTeamToProjectForm({ workspaceId }: { workspaceId:
     if (!teamId || !projectId) return
     setIsSubmitting(true)
     try {
-      const params = new URLSearchParams({ team_id: String(Number(teamId)) })
-      await fetchWithAuth(`/api/projects/${projectId}/teams?${params.toString()}`, { method: "POST" })
+      const params = new URLSearchParams({ team_id: String(teamId) })
+      await fetchWithAuth(`/api/projects/${projectId}/teams?${params.toString()}`, {
+        method: "POST",
+      })
       toast({ title: "Assigned", description: "Team assigned to project" })
+      // Reset form
+      setTeamId("")
+      setProjectId("")
+      // Refresh data
+      window.location.reload()
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Failed to assign team", variant: "destructive" })
     } finally {
@@ -110,16 +122,11 @@ export function AssignWorkspaceTeamToProjectForm({ workspaceId }: { workspaceId:
     }
   }
 
-  console.log("🎯 Component about to render. Teams count:", normalizedTeams.length)
-  
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">Assign Workspace Team to Project</CardTitle>
         <CardDescription>Choose a team and a project within this workspace</CardDescription>
-        <div className="text-xs text-muted-foreground">
-          DEBUG: workspaceId={workspaceId}, teams={teams ? 'loaded' : 'loading'}, count={normalizedTeams.length}
-        </div>
       </CardHeader>
       <CardContent>
         {teamsError && (

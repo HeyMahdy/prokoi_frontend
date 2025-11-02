@@ -15,17 +15,12 @@ interface WorkspaceTeam { id: number; name: string }
 interface TeamProject { team_id: number; project_id: number }
 
 export function AssignExistingTeamToProjectForm({ workspaceId, projectId }: { workspaceId: number; projectId: number }) {
-  console.log("🔍 AssignExistingTeamToProjectForm rendered with:", { workspaceId, projectId })
-  
   const apiUrl = Number.isFinite(workspaceId) ? `/api/workspaces/${workspaceId}/teams` : null
-  console.log("🌐 API URL for workspace teams:", apiUrl)
   
   const { data: workspaceTeams, error: workspaceTeamsError, isLoading: workspaceTeamsLoading } = useSWR<any>(
     apiUrl,
     fetchWithAuth,
   )
-  
-  console.log("📊 Workspace teams SWR state:", { workspaceTeams, workspaceTeamsError, workspaceTeamsLoading })
   
   const { data: assigned } = useSWR<TeamProject[]>(
     Number.isFinite(projectId) ? `/api/projects/${projectId}/teams` : null,
@@ -37,38 +32,38 @@ export function AssignExistingTeamToProjectForm({ workspaceId, projectId }: { wo
 
   const normalizedWorkspaceTeams: WorkspaceTeam[] = useMemo(() => {
     if (!workspaceTeams) {
-      console.log("No workspace teams data")
       return []
     }
     
-    console.log("Raw workspace teams data:", workspaceTeams)
-    
     // Handle direct array response (most common case)
     if (Array.isArray(workspaceTeams)) {
-      console.log("Workspace teams is direct array:", workspaceTeams)
-      return workspaceTeams.map((t: any) => ({ id: t.team_id, name: t.team_name })).filter((t) => t.id && t.name)
+      return workspaceTeams.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t) => t.id)
     }
     
     // Handle wrapped responses
     if (workspaceTeams.items && Array.isArray(workspaceTeams.items)) {
-      console.log("Workspace teams has items array:", workspaceTeams.items)
-      return workspaceTeams.items.map((t: any) => ({ id: t.team_id, name: t.team_name })).filter((t: any) => t.id && t.name)
+      return workspaceTeams.items.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
     }
     
     if (workspaceTeams.data && Array.isArray(workspaceTeams.data)) {
-      console.log("Workspace teams has data array:", workspaceTeams.data)
-      return workspaceTeams.data.map((t: any) => ({ id: t.team_id, name: t.team_name })).filter((t: any) => t.id && t.name)
+      return workspaceTeams.data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
     }
     
-    console.log("Workspace teams data doesn't match expected format:", workspaceTeams)
     return []
   }, [workspaceTeams])
 
   const availableTeams = useMemo(() => {
     const assignedIds = new Set((assigned || []).map((a: any) => a.team_id ?? a.id))
-    const result = normalizedWorkspaceTeams.filter((t) => !assignedIds.has(t.id))
-    console.log("Available teams:", result)
-    return result
+    return normalizedWorkspaceTeams.filter((t) => !assignedIds.has(t.id))
   }, [normalizedWorkspaceTeams, assigned])
 
   async function onSubmit(e: React.FormEvent) {
@@ -76,12 +71,15 @@ export function AssignExistingTeamToProjectForm({ workspaceId, projectId }: { wo
     if (!teamId) return
     setIsSubmitting(true)
     try {
-      const params = new URLSearchParams({ team_id: String(Number(teamId)) })
+      const params = new URLSearchParams({ team_id: String(teamId) })
       await fetchWithAuth(`/api/projects/${projectId}/teams?${params.toString()}`, {
         method: "POST",
       })
       toast({ title: "Assigned", description: "Team assigned to project" })
-      mutate(`/api/projects/${projectId}/teams`)
+      // Reset form
+      setTeamId("")
+      // Refresh data
+      window.location.reload()
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Failed to assign team", variant: "destructive" })
     } finally {
@@ -94,9 +92,6 @@ export function AssignExistingTeamToProjectForm({ workspaceId, projectId }: { wo
       <CardHeader>
         <CardTitle className="flex items-center gap-2">Add Team to Project</CardTitle>
         <CardDescription>Select a workspace team to add</CardDescription>
-        <div className="text-xs text-muted-foreground">
-          DEBUG: workspaceId={workspaceId}, teams={workspaceTeams ? 'loaded' : 'loading'}, count={normalizedWorkspaceTeams.length}, available={availableTeams.length}
-        </div>
       </CardHeader>
       <CardContent>
         {workspaceTeamsError && (

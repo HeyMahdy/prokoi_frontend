@@ -1,6 +1,7 @@
 "use client"
 
 import useSWR from "swr"
+import { useMemo } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { fetchWithAuth } from "@/lib/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,10 +23,40 @@ export default function WorkspaceTeamsPage() {
   const router = useRouter()
   const workspaceId = Number(params.workspaceId)
 
-  const { data, error, isLoading } = useSWR<Team[]>(
+  const { data, error, isLoading } = useSWR<any>(
     Number.isFinite(workspaceId) ? `/api/workspaces/${workspaceId}/teams` : null,
     fetchWithAuth,
   )
+
+  // Normalize the teams data
+  const normalizedTeams: Team[] = useMemo(() => {
+    if (!data) return []
+    
+    // Handle direct array response
+    if (Array.isArray(data)) {
+      return data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t) => t.id)
+    }
+    
+    // Handle wrapped responses
+    if (data.items && Array.isArray(data.items)) {
+      return data.items.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
+    }
+    
+    if (data.data && Array.isArray(data.data)) {
+      return data.data.map((t: any) => ({ 
+        id: t.team_id || t.id, 
+        name: t.team_name || t.name || `Team ${t.team_id || t.id}` 
+      })).filter((t: any) => t.id)
+    }
+    
+    return []
+  }, [data])
 
   return (
     <div className="container mx-auto px-6 py-8 space-y-8">
@@ -68,7 +99,7 @@ export default function WorkspaceTeamsPage() {
             </Alert>
           )}
 
-          {data && (
+          {normalizedTeams && (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -78,13 +109,13 @@ export default function WorkspaceTeamsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((team) => (
+                  {normalizedTeams.map((team) => (
                     <TableRow key={team.id}>
                       <TableCell className="font-medium">{team.id}</TableCell>
                       <TableCell>{team.name}</TableCell>
                     </TableRow>
                   ))}
-                  {data.length === 0 && (
+                  {normalizedTeams.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={2} className="text-sm text-muted-foreground text-center">No teams assigned</TableCell>
                     </TableRow>
