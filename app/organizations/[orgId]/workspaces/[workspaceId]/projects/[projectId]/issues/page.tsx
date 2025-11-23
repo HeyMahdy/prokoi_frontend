@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation"
 import { CreateIssueForm } from "@/components/issues/create-issue-form"
 import { IssuesTable } from "@/components/issues/issues-table"
+import { AIIssueGenerator } from "@/components/issues/ai-issue-generator"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
@@ -41,9 +42,13 @@ export default function ProjectIssuesPage() {
 
         {/* Content */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Create Issue Form */}
-          <div>
+          {/* Left Column - Forms */}
+          <div className="space-y-6">
+            {/* Create Issue Form */}
             <CreateIssueForm projectId={projectId} onSuccess={handleSuccess} />
+            
+            {/* AI Issue Generator */}
+            <AIIssueGenerator projectId={projectId} onIssuesGenerated={handleSuccess} />
           </div>
 
           {/* Issues Table */}
