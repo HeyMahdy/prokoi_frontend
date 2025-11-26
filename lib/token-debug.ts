@@ -36,18 +36,18 @@ export function getCurrentTokenInfo() {
         if (parts.length === 3) {
           const payload = JSON.parse(atob(parts[1]))
           // Handle different possible field names for user ID and email
-          // Backend stores user ID in "sub" field, not email
+          // Backend stores user ID in "sub" field, which can be an email
           const userId = payload.sub || payload.user_id || payload.id || null
           // Look for email in multiple possible fields
           const email = payload.email || payload.user_email || null
 
-          // Check if user ID is actually an email (indicating a backend issue)
+          // Check if user ID is actually an email (this is now valid)
           const userIdIsEmail = typeof userId === 'string' && userId.includes('@')
 
           return {
             exists: true,
             userId: userId,
-            userIdIsEmail: userIdIsEmail,
+            userIdIsEmail: userIdIsEmail, // Kept for info, but not an error
             email: email,
             exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : null,
             iat: payload.iat ? new Date(payload.iat * 1000).toISOString() : null,

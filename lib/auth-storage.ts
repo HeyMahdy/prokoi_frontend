@@ -31,7 +31,9 @@ class AuthStorage {
 
   // Access Token
   public getAuthToken(): string | null {
-    return this.getStorage()?.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null;
+    const token = this.getStorage()?.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token || token === "undefined" || token === "null") return null;
+    return token;
   }
 
   public setAuthToken(token: string) {
@@ -117,13 +119,13 @@ class AuthStorage {
     this.removeUserId();
     this.removeUserData();
     this.removeSelectedOrg();
-    
+
     // Also try to clear from localStorage to be safe during migration/mixed usage
     if (typeof window !== "undefined") {
-        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.USER_ID);
-        localStorage.removeItem(STORAGE_KEYS.USER_DATA);
-        localStorage.removeItem(STORAGE_KEYS.SELECTED_ORG);
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER_ID);
+      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_ORG);
     }
   }
 }

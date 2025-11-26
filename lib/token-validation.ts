@@ -9,7 +9,7 @@ import { authStorage } from "./auth-storage"
  */
 export function validateAndExtractUserInfo(token: string | null): {
   isValid: boolean;
-  userId: number | null;
+  userId: string | number | null;
   email: string | null;
   isTokenIssue: boolean
 } | null {
@@ -31,19 +31,16 @@ export function validateAndExtractUserInfo(token: string | null): {
     const payload = JSON.parse(atob(parts[1]));
 
     // Extract user ID from possible fields
-    // Backend puts user ID in "sub" field, not "user_id" or "id"
+    // Backend puts user email in "sub" field
     const userId = payload.sub || payload.user_id || payload.id || null;
     // Extract email from possible fields
-    // Email should be in "email" field, not "sub"
     const email = payload.email || payload.user_email || null;
 
-    // Check if user ID is actually an email (backend issue)
-    const userIdIsEmail = typeof userId === 'string' && userId.includes('@');
     // Check if user ID is the default placeholder (1) - this is a critical issue
     const userIdIsDefault = userId === 1 || userId === "1";
 
-    // If user ID is an email or default value, this indicates a backend token issue
-    if (userIdIsEmail || userIdIsDefault) {
+    // If user ID is default value, this indicates a backend token issue
+    if (userIdIsDefault) {
       return {
         isValid: true, // Token itself is valid
         userId: null, // But user ID is problematic
@@ -52,8 +49,8 @@ export function validateAndExtractUserInfo(token: string | null): {
       };
     }
 
-    // Validate that user ID is a proper number greater than 1
-    const validUserId = userId && Number.isInteger(Number(userId)) && Number(userId) > 1 ? Number(userId) : null;
+    // Validate that user ID is present
+    const validUserId = userId ? userId : null;
 
     return {
       isValid: true,
@@ -75,7 +72,7 @@ export function validateAndExtractUserInfo(token: string | null): {
  * Get validated user ID from token or storage
  * @returns Valid user ID or null
  */
-export function getValidatedUserId(): number | null {
+export function getValidatedUserId(): string | number | null {
   if (typeof window === 'undefined') return null;
 
   const token = authStorage.getAuthToken();
@@ -89,11 +86,12 @@ export function getValidatedUserId(): number | null {
   // Fallback to storage user_id if token parsing fails
   // But still validate that it's not the default value
   const storedUserId = authStorage.getUserId();
-  if (storedUserId &&
-    storedUserId !== "1" &&
-    Number.isInteger(Number(storedUserId)) &&
-    Number(storedUserId) > 1) {
-    return Number(storedUserId);
+  if (storedUserId && storedUserId !== "1") {
+    // Check if it looks like a number, if so return as number, else return as string
+    if (Number.isInteger(Number(storedUserId)) && Number(storedUserId) > 0) {
+      return Number(storedUserId);
+    }
+    return storedUserId;
   }
 
   return null;

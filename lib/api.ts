@@ -117,8 +117,13 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
       throw new ApiError(errorMessage, response.status)
     }
 
-    console.log("API Error Response:", data)
+    console.log(`API Error Response (${endpoint}):`, data)
     console.log("Response Status:", response.status)
+
+    if (response.status === 401) {
+      console.log("[TOKEN DEBUG] 401 Unauthorized for endpoint:", endpoint);
+      console.log("[TOKEN DEBUG] Token used:", token ? `${token.substring(0, 10)}...` : "null");
+    }
 
     // Handle different error response formats more robustly
     if (data && typeof data === 'object') {
