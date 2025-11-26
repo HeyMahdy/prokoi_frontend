@@ -13,6 +13,7 @@ import { AlertCircle, User } from "lucide-react"
 import { AddSkillForm } from "@/components/profile/add-skill-form"
 import { SkillsTable } from "@/components/profile/skills-table"
 import { isTokenDebuggingEnabled } from "@/lib/token-debug"
+import { authStorage } from "@/lib/auth-storage"
 
 interface User {
   id: number
@@ -26,12 +27,12 @@ export default function ProfilePage() {
   const [initTried, setInitTried] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
       return
     }
-    
+
     // Use the new validated user ID extraction
     const validatedUserId = getValidatedUserId();
     if (validatedUserId) {
@@ -39,12 +40,12 @@ export default function ProfilePage() {
       setInitTried(true);
       return;
     }
-    
+
     // Log error in debug mode
     if (isTokenDebuggingEnabled()) {
-      console.log("[TOKEN DEBUG] Unable to extract valid user ID from token or localStorage");
+      console.log("[TOKEN DEBUG] Unable to extract valid user ID from token or storage");
     }
-    
+
     setInitTried(true);
   }, [router])
 

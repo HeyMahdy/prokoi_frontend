@@ -1,18 +1,17 @@
 // Utility functions for debugging token issues
 
+import { authStorage } from "./auth-storage"
+
 /**
  * Enable or disable token debugging
  * @param enabled - Whether to enable token debugging
  */
 export function setTokenDebugging(enabled: boolean) {
-  if (typeof window !== 'undefined') {
-    if (enabled) {
-      localStorage.setItem("debug_tokens", "true")
-      console.log("[TOKEN DEBUG] Token debugging enabled")
-    } else {
-      localStorage.removeItem("debug_tokens")
-      console.log("[TOKEN DEBUG] Token debugging disabled")
-    }
+  authStorage.setDebugEnabled(enabled)
+  if (enabled) {
+    console.log("[TOKEN DEBUG] Token debugging enabled")
+  } else {
+    console.log("[TOKEN DEBUG] Token debugging disabled")
   }
 }
 
@@ -21,10 +20,7 @@ export function setTokenDebugging(enabled: boolean) {
  * @returns boolean indicating if token debugging is enabled
  */
 export function isTokenDebuggingEnabled(): boolean {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem("debug_tokens") === "true"
-  }
-  return false
+  return authStorage.isDebugEnabled()
 }
 
 /**
@@ -33,7 +29,7 @@ export function isTokenDebuggingEnabled(): boolean {
  */
 export function getCurrentTokenInfo() {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (token) {
       try {
         const parts = token.split(".")
@@ -44,10 +40,10 @@ export function getCurrentTokenInfo() {
           const userId = payload.sub || payload.user_id || payload.id || null
           // Look for email in multiple possible fields
           const email = payload.email || payload.user_email || null
-          
+
           // Check if user ID is actually an email (indicating a backend issue)
           const userIdIsEmail = typeof userId === 'string' && userId.includes('@')
-          
+
           return {
             exists: true,
             userId: userId,
@@ -77,14 +73,14 @@ export function getCurrentTokenInfo() {
 }
 
 /**
- * Log all authentication-related localStorage items
+ * Log all authentication-related storage items
  */
 export function logAuthStorage() {
-  if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+  if (authStorage.isDebugEnabled()) {
     console.log("[TOKEN DEBUG] Current auth storage:")
-    console.log("  access_token:", localStorage.getItem("access_token") ? "exists" : "null")
-    console.log("  user_id:", localStorage.getItem("user_id") || "null")
-    console.log("  user_data:", localStorage.getItem("user_data") || "null")
-    console.log("  selected_org:", localStorage.getItem("selected_org") || "null")
+    console.log("  access_token:", authStorage.getAuthToken() ? "exists" : "null")
+    console.log("  user_id:", authStorage.getUserId() || "null")
+    console.log("  user_data:", authStorage.getUserData() ? "exists" : "null")
+    console.log("  selected_org:", authStorage.getSelectedOrg() ? "exists" : "null")
   }
 }

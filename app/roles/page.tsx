@@ -9,21 +9,21 @@ import { RolesTable } from "@/components/roles/roles-table"
 import { PermissionsList } from "@/components/roles/permissions-list"
 import { AssignPermissionForm } from "@/components/roles/assign-permission-form"
 import { RolePermissionsView } from "@/components/roles/role-permissions-view"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function RolesPage() {
   const router = useRouter()
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 

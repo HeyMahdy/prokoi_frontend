@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { fetchWithAuth } from "@/lib/api"
 import { hasTokenIssue } from "@/lib/token-validation"
 import { Loader2, Sparkles } from "lucide-react"
+import { authStorage } from "@/lib/auth-storage"
 
 interface AIChatInput {
   input: string
@@ -30,7 +31,7 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Check for token issues before making the request
     if (hasTokenIssue()) {
       toast({
@@ -40,7 +41,7 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
       })
       return
     }
-    
+
     if (!input.trim()) {
       toast({
         title: "Error",
@@ -60,9 +61,9 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
       // Make API call to the chat endpoint with project_id as query parameter
       // Using fetchWithAuth to include JWT token with the correct base URL
       const API_BASE_URL = "http://127.0.0.1:8001"
-      
+
       // Create a custom fetch function for the AI endpoint that includes the token
-      const token = localStorage.getItem("access_token")
+      const token = authStorage.getAuthToken()
       if (!token) {
         throw new Error("No authentication token found")
       }
@@ -98,7 +99,7 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
 
       // Reset form
       setInput("")
-      
+
       // Call the callback to notify parent component
       onIssuesGenerated?.()
     } catch (error: any) {

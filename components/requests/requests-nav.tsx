@@ -4,14 +4,14 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { authStorage } from "@/lib/auth-storage"
 
 export function RequestsNav() {
   const pathname = usePathname()
   const router = useRouter()
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 

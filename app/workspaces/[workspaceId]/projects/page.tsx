@@ -6,6 +6,7 @@ import { mutate } from "swr"
 import { Button } from "@/components/ui/button"
 import { CreateProjectForm } from "@/components/projects/create-project-form"
 import { ProjectsTable } from "@/components/projects/projects-table"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function WorkspaceProjectsPage() {
   const router = useRouter()
@@ -13,15 +14,14 @@ export default function WorkspaceProjectsPage() {
   const workspaceId = Number(params.workspaceId)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 
@@ -60,8 +60,8 @@ export default function WorkspaceProjectsPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
           <CreateProjectForm workspaceId={workspaceId} onProjectCreated={handleProjectCreated} />
-          <ProjectsTable 
-            workspaceId={workspaceId} 
+          <ProjectsTable
+            workspaceId={workspaceId}
             onMyIssues={handleMyIssues}
             onAssignIssues={handleAssignIssues}
           />

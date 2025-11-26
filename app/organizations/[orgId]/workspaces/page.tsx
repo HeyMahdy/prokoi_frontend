@@ -6,6 +6,7 @@ import { mutate } from "swr"
 import { Button } from "@/components/ui/button"
 import { CreateWorkspaceForm } from "@/components/workspaces/create-workspace-form"
 import { WorkspacesTable } from "@/components/workspaces/workspaces-table"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function OrganizationWorkspacesPage() {
   const router = useRouter()
@@ -14,15 +15,14 @@ export default function OrganizationWorkspacesPage() {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<number | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 
@@ -64,8 +64,8 @@ export default function OrganizationWorkspacesPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
           <CreateWorkspaceForm orgId={orgId} onWorkspaceCreated={handleWorkspaceCreated} />
-          <WorkspacesTable 
-            orgId={orgId} 
+          <WorkspacesTable
+            orgId={orgId}
             onWorkspaceSelect={handleWorkspaceSelect}
           />
         </div>

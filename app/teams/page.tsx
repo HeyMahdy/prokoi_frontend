@@ -7,6 +7,7 @@ import { CreateTeamForm } from "@/components/teams/create-team-form"
 import { TeamsTable } from "@/components/teams/teams-table"
 import { AddMemberForm } from "@/components/teams/add-member-form"
 import { MembersTable } from "@/components/teams/members-table"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function TeamsPage() {
   const router = useRouter()
@@ -14,15 +15,14 @@ export default function TeamsPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 

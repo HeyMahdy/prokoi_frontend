@@ -9,6 +9,7 @@ import { AddMemberForm } from "@/components/teams/add-member-form"
 import { MembersTable } from "@/components/teams/members-table"
 import { AssignTeamToWorkspaceForm } from "@/components/teams/assign-team-to-workspace-form"
 import { AssignTeamToProjectForm } from "@/components/teams/assign-team-to-project-form"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function OrganizationTeamsPage() {
   const router = useRouter()
@@ -17,15 +18,14 @@ export default function OrganizationTeamsPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 
@@ -53,7 +53,7 @@ export default function OrganizationTeamsPage() {
 
       <main className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
-          <CreateTeamForm onOrgSelect={() => {}} />
+          <CreateTeamForm onOrgSelect={() => { }} />
           <TeamsTable orgId={orgId} onTeamSelect={setSelectedTeamId} />
           {selectedTeamId && <AddMemberForm teamId={selectedTeamId} orgId={orgId} />}
           {selectedTeamId && <MembersTable teamId={selectedTeamId} />}

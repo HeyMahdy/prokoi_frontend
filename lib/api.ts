@@ -1,12 +1,13 @@
 // Utility functions for API calls with authentication
 
 import { validateAndExtractUserInfo } from "./token-validation"
+import { authStorage } from "./auth-storage"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 
 // Add detailed logging for debugging token issues
 const logTokenInfo = (token: string | null, source: string) => {
-  if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+  if (authStorage.isDebugEnabled()) {
     console.log(`[TOKEN DEBUG] ${source}:`, {
       timestamp: new Date().toISOString(),
       tokenExists: !!token,
@@ -20,23 +21,23 @@ const logTokenInfo = (token: string | null, source: string) => {
 // Backend stores user ID in "sub" field, not email
 const parseUserIdFromToken = (token: string | null): number | null => {
   if (!token) return null
-  
+
   const tokenInfo = validateAndExtractUserInfo(token);
   if (tokenInfo && tokenInfo.userId) {
     return tokenInfo.userId;
   }
-  
-  // Fallback to localStorage if token parsing fails
+
+  // Fallback to storage if token parsing fails
   if (typeof window !== 'undefined') {
-    const storedUserId = localStorage.getItem("user_id")
-    if (storedUserId && 
-        storedUserId !== "1" && 
-        Number.isInteger(Number(storedUserId)) && 
-        Number(storedUserId) > 1) {
+    const storedUserId = authStorage.getUserId()
+    if (storedUserId &&
+      storedUserId !== "1" &&
+      Number.isInteger(Number(storedUserId)) &&
+      Number(storedUserId) > 1) {
       return Number(storedUserId)
     }
   }
-  
+
   return null
 }
 
@@ -47,7 +48,7 @@ export class ApiError extends Error {
   ) {
     // Ensure message is always a string and never "[object Object]"
     let errorMessage: string
-    
+
     if (typeof message === 'string') {
       errorMessage = message
     } else if (message && typeof message === 'object') {
@@ -64,29 +65,29 @@ export class ApiError extends Error {
     } else {
       errorMessage = String(message)
     }
-    
+
     // Final safety check
     if (errorMessage === '[object Object]') {
       errorMessage = 'An error occurred'
     }
-    
+
     super(errorMessage)
     this.name = "ApiError"
   }
 }
 
-// Cache for the token to avoid repeated localStorage calls
+// Cache for the token to avoid repeated storage calls
 let cachedToken: string | null = null
 let tokenCheckTimestamp: number = 0
 const TOKEN_CACHE_DURATION = 50 // 50ms - very short duration for more frequent checks
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-  // Always check localStorage for the latest token (more aggressive approach)
-  const token = localStorage.getItem("access_token")
-  
+  // Always check storage for the latest token (more aggressive approach)
+  const token = authStorage.getAuthToken()
+
   // Log token information for debugging
   logTokenInfo(token, "fetchWithAuth")
-  
+
   // Update cache with the latest token
   cachedToken = token
   tokenCheckTimestamp = Date.now()
@@ -107,7 +108,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   if (!response.ok) {
     let data
     let errorMessage = `Request failed with status ${response.status}`
-    
+
     try {
       data = await response.json()
     } catch (e) {
@@ -115,21 +116,21 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
       errorMessage = response.statusText || errorMessage
       throw new ApiError(errorMessage, response.status)
     }
-    
+
     console.log("API Error Response:", data)
     console.log("Response Status:", response.status)
-    
+
     // Handle different error response formats more robustly
     if (data && typeof data === 'object') {
       // Check for common error message fields
       if (typeof data.detail === 'string' && data.detail.trim()) {
         errorMessage = data.detail
       } else if (typeof data.message === 'string' && data.message.trim()) {
-        errorMessage = data.message  
+        errorMessage = data.message
       } else if (typeof data.error === 'string' && data.error.trim()) {
         errorMessage = data.error
       } else if (Array.isArray(data.detail)) {
-        errorMessage = data.detail.map((item: any) => 
+        errorMessage = data.detail.map((item: any) =>
           typeof item === 'string' ? item : JSON.stringify(item)
         ).join(', ')
       } else if (typeof data.detail === 'object' && data.detail !== null) {
@@ -146,14 +147,14 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
         }
       }
     }
-    
+
     // Final fallback if we still have no meaningful message
     if (!errorMessage || errorMessage === `Request failed with status ${response.status}`) {
       errorMessage = `Server error (${response.status}): ${response.statusText || 'Unknown error'}`
     }
-    
+
     console.log("Final error message:", errorMessage)
-    
+
     throw new ApiError(errorMessage, response.status)
   }
 
@@ -164,7 +165,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
 export function clearTokenCache() {
   cachedToken = null
   tokenCheckTimestamp = 0
-  if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+  if (authStorage.isDebugEnabled()) {
     console.log("[TOKEN DEBUG] Token cache cleared at", new Date().toISOString())
   }
 }

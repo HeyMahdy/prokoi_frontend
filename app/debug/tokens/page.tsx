@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { setTokenDebugging, isTokenDebuggingEnabled, getCurrentTokenInfo, logAuthStorage } from "@/lib/token-debug"
 import { useRouter } from "next/navigation"
+import { authStorage as authStorageLib } from "@/lib/auth-storage"
 
 export default function TokenDebugPage() {
   const router = useRouter()
@@ -14,15 +15,16 @@ export default function TokenDebugPage() {
 
   useEffect(() => {
     setIsDebugging(isTokenDebuggingEnabled())
-    
+
     const interval = setInterval(() => {
       setTokenInfo(getCurrentTokenInfo())
       if (typeof window !== 'undefined') {
+        const userData = authStorageLib.getUserData();
         setAuthStorage({
-          access_token: localStorage.getItem("access_token") ? "exists" : "null",
-          user_id: localStorage.getItem("user_id") || "null",
-          user_data: localStorage.getItem("user_data") || "null",
-          selected_org: localStorage.getItem("selected_org") || "null",
+          access_token: authStorageLib.getAuthToken() ? "exists" : "null",
+          user_id: authStorageLib.getUserId() || "null",
+          user_data: userData ? JSON.stringify(userData) : "null",
+          selected_org: authStorageLib.getSelectedOrg() || "null",
         })
       }
     }, 1000)
@@ -39,11 +41,12 @@ export default function TokenDebugPage() {
   const refreshTokenInfo = () => {
     setTokenInfo(getCurrentTokenInfo())
     if (typeof window !== 'undefined') {
+      const userData = authStorageLib.getUserData();
       setAuthStorage({
-        access_token: localStorage.getItem("access_token") ? "exists" : "null",
-        user_id: localStorage.getItem("user_id") || "null",
-        user_data: localStorage.getItem("user_data") || "null",
-        selected_org: localStorage.getItem("selected_org") || "null",
+        access_token: authStorageLib.getAuthToken() ? "exists" : "null",
+        user_id: authStorageLib.getUserId() || "null",
+        user_data: userData ? JSON.stringify(userData) : "null",
+        selected_org: authStorageLib.getSelectedOrg() || "null",
       })
     }
   }
@@ -76,7 +79,7 @@ export default function TokenDebugPage() {
                 {isDebugging ? "Disable Debugging" : "Enable Debugging"}
               </Button>
             </div>
-            
+
             <div className="flex gap-2">
               <Button onClick={refreshTokenInfo}>Refresh Token Info</Button>
               <Button onClick={logAuthStorage} variant="outline">Log Auth Storage</Button>
@@ -99,7 +102,7 @@ export default function TokenDebugPage() {
                       {tokenInfo.exists ? "Yes" : "No"}
                     </span>
                   </div>
-                  
+
                   {tokenInfo.exists && (
                     <>
                       <div className="flex justify-between">
@@ -130,7 +133,7 @@ export default function TokenDebugPage() {
                       </div>
                     </>
                   )}
-                  
+
                   {tokenInfo.error && (
                     <div className="text-red-600">{tokenInfo.error}</div>
                   )}

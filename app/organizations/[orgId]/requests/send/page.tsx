@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { SendRequestForm } from "@/components/requests/send-request-form"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function OrganizationSendRequestPage() {
   const router = useRouter()
@@ -11,15 +12,14 @@ export default function OrganizationSendRequestPage() {
   const orgId = Number(params.orgId)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 

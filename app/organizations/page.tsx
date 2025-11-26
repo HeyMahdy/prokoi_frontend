@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { OrganizationsTable } from "@/components/organizations/organizations-table"
 import { CreateOrganizationForm } from "@/components/organizations/create-organization-form"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function OrganizationsPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
   }, [router])
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
+    authStorage.clearAll()
     router.push("/login")
   }
 

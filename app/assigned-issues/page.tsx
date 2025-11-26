@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, AlertCircle, Filter } from "lucide-react"
 import { isTokenDebuggingEnabled } from "@/lib/token-debug"
 import { getValidatedUserId } from "@/lib/token-validation"
+import { authStorage } from "@/lib/auth-storage"
 
 interface User {
   id: number
@@ -56,31 +57,30 @@ export default function AssignedIssuesPage() {
   const [hasFilters, setHasFilters] = useState(false)
 
   useEffect(() => {
-    const userData = localStorage.getItem("user_data")
-    const accessToken = localStorage.getItem("access_token")
-    
+    const userData = authStorage.getUserData()
+    const accessToken = authStorage.getAuthToken()
+
     if (userData && accessToken) {
-      const parsedUser = JSON.parse(userData)
-      
+
       // Use the new validated user ID extraction
       const validatedUserId = getValidatedUserId();
       if (validatedUserId) {
         setUser({
           id: validatedUserId,
-          name: parsedUser.name,
-          email: parsedUser.email
+          name: userData.name,
+          email: userData.email
         })
         setUserLoading(false)
         return
       }
-      
+
       // If no user ID available, show error
       toast({
         title: "Error",
         description: "User ID not found. Please log in again to access assigned issues.",
         variant: "destructive"
       })
-      
+
       setUserLoading(false)
     } else {
       setUserLoading(false)
@@ -90,9 +90,9 @@ export default function AssignedIssuesPage() {
   // Build query parameters
   const queryParams = new URLSearchParams()
   if (projectFilter && projectFilter !== "all") queryParams.append("project_id", projectFilter)
-  
+
   const queryString = queryParams.toString()
-  const apiUrl = user 
+  const apiUrl = user
     ? `/api/users/assigned-issues${queryString ? `?${queryString}` : ""}`
     : null
 
@@ -103,13 +103,13 @@ export default function AssignedIssuesPage() {
 
   // Fetch organizations to get projects
   const { data: organizations } = useSWR(`/api/organizations/get`, fetchWithAuth)
-  
+
   // Fetch all projects from all workspaces
-  const projectsData = organizations ? 
+  const projectsData = organizations ?
     Promise.all(
-      organizations.map((org: any) => 
+      organizations.map((org: any) =>
         fetchWithAuth(`/api/organizations/${org.id}/workspaces`)
-          .then((workspaces: any[]) => 
+          .then((workspaces: any[]) =>
             Promise.all(
               workspaces.map((workspace: any) =>
                 fetchWithAuth(`/api/organizations/${org.id}/workspaces/${workspace.id}/projects`)
@@ -158,7 +158,7 @@ export default function AssignedIssuesPage() {
       done: { variant: "default" as const, label: "Done" },
       closed: { variant: "outline" as const, label: "Closed" },
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || { variant: "outline" as const, label: status }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -170,7 +170,7 @@ export default function AssignedIssuesPage() {
       high: { variant: "destructive" as const, label: "High" },
       urgent: { variant: "destructive" as const, label: "Urgent" },
     }
-    
+
     const config = priorityConfig[priority as keyof typeof priorityConfig] || { variant: "outline" as const, label: priority }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -360,7 +360,7 @@ export default function AssignedIssuesPage() {
                     {issues.map((issue) => {
                       // Find the project name for this issue
                       const project = projects?.find((p: Project) => p.id === issue.project_id)
-                      
+
                       return (
                         <tr key={issue.id} className="border-b">
                           <td className="p-4 align-middle font-mono text-sm">{issue.id}</td>

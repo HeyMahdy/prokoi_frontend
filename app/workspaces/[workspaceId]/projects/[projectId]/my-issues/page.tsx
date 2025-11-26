@@ -13,6 +13,7 @@ import { ArrowLeft, User, AlertCircle } from "lucide-react"
 import useSWR from "swr"
 import { fetchWithAuth } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
+import { authStorage } from "@/lib/auth-storage"
 
 interface Issue {
   id: number
@@ -47,25 +48,24 @@ export default function MyIssuesPage() {
   const { toast } = useToast()
   const workspaceId = parseInt(params.workspaceId as string)
   const projectId = parseInt(params.projectId as string)
-  
+
   const [user, setUser] = useState<User | null>(null)
   const [userLoading, setUserLoading] = useState(true)
 
   useEffect(() => {
-    const userData = localStorage.getItem("user_data")
-    const accessToken = localStorage.getItem("access_token")
-    
+    const userData = authStorage.getUserData()
+    const accessToken = authStorage.getAuthToken()
+
     if (userData && accessToken) {
-      const parsedUser = JSON.parse(userData)
-      
-      // Try to get user ID from localStorage or use a fallback approach
-      const userId = localStorage.getItem("user_id")
-      
+
+      // Try to get user ID from storage or use a fallback approach
+      const userId = authStorage.getUserId()
+
       if (userId) {
         setUser({
           id: parseInt(userId),
-          name: parsedUser.name,
-          email: parsedUser.email
+          name: userData.name,
+          email: userData.email
         })
       } else {
         // Fallback: redirect to login if no user ID
@@ -77,7 +77,7 @@ export default function MyIssuesPage() {
         router.push("/login")
         return
       }
-      
+
       setUserLoading(false)
     } else {
       setUserLoading(false)
@@ -123,7 +123,7 @@ export default function MyIssuesPage() {
       done: { variant: "default" as const, label: "Done" },
       closed: { variant: "outline" as const, label: "Closed" },
     }
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || { variant: "outline" as const, label: status }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -135,7 +135,7 @@ export default function MyIssuesPage() {
       high: { variant: "destructive" as const, label: "High" },
       urgent: { variant: "destructive" as const, label: "Urgent" },
     }
-    
+
     const config = priorityConfig[priority as keyof typeof priorityConfig] || { variant: "outline" as const, label: priority }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
@@ -235,8 +235,8 @@ export default function MyIssuesPage() {
               My Assigned Issues
             </CardTitle>
             <CardDescription>
-              {isLoading 
-                ? "Loading your assigned issues..." 
+              {isLoading
+                ? "Loading your assigned issues..."
                 : `You have ${assignedIssues?.length || 0} assigned issues in this project`
               }
             </CardDescription>
@@ -333,13 +333,13 @@ export default function MyIssuesPage() {
                       You don't have any issues assigned to you in this project yet. Ask your team lead or project manager to assign you some tasks to get started!
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         onClick={() => router.push(`/workspaces/${workspaceId}/projects`)}
                       >
                         Back to Projects
                       </Button>
-                      <Button 
+                      <Button
                         onClick={() => router.push(`/workspaces/${workspaceId}/projects/${projectId}/assign-issues`)}
                       >
                         Assign Issues

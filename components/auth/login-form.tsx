@@ -13,6 +13,7 @@ import { AlertCircle } from "lucide-react"
 import { clearTokenCache } from "@/lib/api"
 import { mutate } from "swr"
 import { logAuthStorage } from "@/lib/token-debug"
+import { authStorage } from "@/lib/auth-storage"
 
 export function LoginForm() {
   const router = useRouter()
@@ -27,14 +28,14 @@ export function LoginForm() {
   const extractValidUserId = (data: any, token: string): number => {
     // Don't use any default value - properly validate and extract user ID
     let userId: number | null = null;
-    
+
     // First try to get user ID from response data
     if (data.user_id && data.user_id !== 1 && Number.isInteger(data.user_id)) {
       userId = data.user_id;
     } else if (data.id && data.id !== 1 && Number.isInteger(data.id)) {
       userId = data.id;
-    } 
-    
+    }
+
     // If not in response data, try to extract from token
     if (userId === null) {
       try {
@@ -44,9 +45,9 @@ export function LoginForm() {
           // Backend stores user ID in "sub" field, not "user_id" or "id"
           const userIdFromToken = payload.sub || payload.user_id || payload.id || null;
           // Only use if it's a numeric ID, not an email, and not the default value 1
-          if (userIdFromToken && 
-              Number.isInteger(Number(userIdFromToken)) && 
-              Number(userIdFromToken) !== 1) {
+          if (userIdFromToken &&
+            Number.isInteger(Number(userIdFromToken)) &&
+            Number(userIdFromToken) !== 1) {
             userId = Number(userIdFromToken);
           }
         }
@@ -54,12 +55,12 @@ export function LoginForm() {
         // If we can't parse token, userId remains null
       }
     }
-    
+
     // If we still don't have a valid user ID, throw an error
     if (userId === null) {
       throw new Error("Could not extract valid user ID from response or token");
     }
-    
+
     return userId;
   }
 
@@ -70,7 +71,7 @@ export function LoginForm() {
 
     try {
       // Log the start of login process
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      if (authStorage.isDebugEnabled()) {
         console.log("[TOKEN DEBUG] Starting login process for:", formData.email);
         logAuthStorage();
       }
@@ -93,27 +94,24 @@ export function LoginForm() {
       }
 
       // Log successful login response
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      if (authStorage.isDebugEnabled()) {
         console.log("[TOKEN DEBUG] Login successful, received token:", data.access_token ? `${data.access_token.substring(0, 20)}...` : null);
       }
 
       // Clear any existing authentication data first
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("user_id");
-      localStorage.removeItem("user_data");
-      localStorage.removeItem("selected_org");
-      
+      authStorage.clearAll();
+
       // Clear ALL SWR caches to ensure no cached data with old tokens
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      if (authStorage.isDebugEnabled()) {
         console.log("[TOKEN DEBUG] Clearing all SWR caches");
       }
       mutate(() => true, undefined, { revalidate: false });
-      
+
       // Clear the token cache
       clearTokenCache();
 
-      // Store access token in localStorage
-      localStorage.setItem("access_token", data.access_token);
+      // Store access token in storage
+      authStorage.setAuthToken(data.access_token);
 
       // Extract and validate user ID from response - throw error if invalid
       let extractedUserId: number;
@@ -124,27 +122,24 @@ export function LoginForm() {
         throw new Error("Authentication token issue: " + (extractionError instanceof Error ? extractionError.message : "Could not extract valid user ID"));
       }
 
-      localStorage.setItem("user_id", extractedUserId.toString());
+      authStorage.setUserId(extractedUserId);
 
-      localStorage.setItem(
-        "user_data",
-        JSON.stringify({
-          id: extractedUserId,
-          name: data.name || formData.email.split("@")[0],
-          email: formData.email,
-        }),
-      );
+      authStorage.setUserData({
+        id: extractedUserId,
+        name: data.name || formData.email.split("@")[0],
+        email: formData.email,
+      });
 
       // Log after storing new token
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
-        console.log("[TOKEN DEBUG] New token stored in localStorage");
+      if (authStorage.isDebugEnabled()) {
+        console.log("[TOKEN DEBUG] New token stored in storage");
         logAuthStorage();
       }
 
       // Dispatch a custom event to notify other parts of the app about the login
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('userLogin', { detail: data }));
-        if (localStorage.getItem("debug_tokens") === "true") {
+        if (authStorage.isDebugEnabled()) {
           console.log("[TOKEN DEBUG] Dispatched userLogin event");
         }
       }

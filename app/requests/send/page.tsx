@@ -4,12 +4,13 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { RequestsNav } from "@/components/requests/requests-nav"
 import { SendRequestForm } from "@/components/requests/send-request-form"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function SendRequestPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import useSWR, { mutate } from "swr"
 import { fetchWithAuth, clearTokenCache } from "@/lib/api"
 import { hasTokenIssue, getValidatedUserId } from "@/lib/token-validation"
+import { authStorage } from "@/lib/auth-storage"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -29,7 +30,7 @@ export default function DashboardPage() {
   const [tokenIssue, setTokenIssue] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
       return
@@ -38,9 +39,9 @@ export default function DashboardPage() {
     // Check for token issues
     setTokenIssue(hasTokenIssue())
 
-    const userData = localStorage.getItem("user_data")
+    const userData = authStorage.getUserData()
     if (userData) {
-      setUser(JSON.parse(userData))
+      setUser(userData)
     } else {
       setUser({ name: "User", email: "user@example.com" })
     }
@@ -52,36 +53,36 @@ export default function DashboardPage() {
   useEffect(() => {
     const handleUserLogin = (event: CustomEvent) => {
       const userData = event.detail
-      
+
       // Log the login event
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      if (authStorage.isDebugEnabled()) {
         console.log("[TOKEN DEBUG] Received userLogin event:", {
           userId: userData.user_id || userData.id,
           email: userData.email
         })
       }
-      
+
       // Update user state with new login data
       setUser({
         id: userData.user_id || userData.id,
         name: userData.name || userData.email?.split("@")[0] || "User",
         email: userData.email || "user@example.com"
       })
-      
+
       // Clear ALL SWR caches to ensure no cached data with old tokens
-      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      if (authStorage.isDebugEnabled()) {
         console.log("[TOKEN DEBUG] Clearing all SWR caches on userLogin event")
       }
       mutate(() => true, undefined, { revalidate: false })
-      
+
       // Clear the token cache
       clearTokenCache()
-      
+
       // Refresh any SWR data that might be cached with old user data
       // This will force revalidation of all SWR hooks
       if (typeof window !== 'undefined') {
         // Force a page refresh to ensure all components use the new token
-        if (localStorage.getItem("debug_tokens") === "true") {
+        if (authStorage.isDebugEnabled()) {
           console.log("[TOKEN DEBUG] Reloading page to ensure token consistency")
         }
         window.location.reload()
@@ -89,7 +90,7 @@ export default function DashboardPage() {
     }
 
     window.addEventListener('userLogin', handleUserLogin as EventListener)
-    
+
     return () => {
       window.removeEventListener('userLogin', handleUserLogin as EventListener)
     }
@@ -107,21 +108,18 @@ export default function DashboardPage() {
     }
 
     window.addEventListener('organizationCreated', handleOrganizationCreated)
-    
+
     return () => {
       window.removeEventListener('organizationCreated', handleOrganizationCreated)
     }
   }, [showOrganizations])
 
   const handleLogout = () => {
-    if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+    if (authStorage.isDebugEnabled()) {
       console.log("[TOKEN DEBUG] User logging out, clearing all authentication data")
     }
-    
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("user_data")
-    localStorage.removeItem("user_id")
-    localStorage.removeItem("selected_org")
+
+    authStorage.clearAll();
     // Clear ALL SWR caches to ensure no cached data with old tokens
     mutate(() => true, undefined, { revalidate: false })
     // Clear the token cache
@@ -137,13 +135,13 @@ export default function DashboardPage() {
 
   const handleEnterOrganization = (org: Organization) => {
     setSelectedOrg(org)
-    localStorage.setItem("selected_org", JSON.stringify(org))
+    authStorage.setSelectedOrg(org)
   }
 
   const handleBackToDashboard = () => {
     setShowOrganizations(false)
     setSelectedOrg(null)
-    localStorage.removeItem("selected_org")
+    authStorage.removeSelectedOrg()
   }
 
   if (isLoading) {
@@ -204,12 +202,12 @@ export default function DashboardPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Token Issue Detected:</strong> There appears to be an issue with your authentication token. 
+                <strong>Token Issue Detected:</strong> There appears to be an issue with your authentication token.
                 This may cause incorrect user information to be displayed. Please log out and log back in.
-                <Button 
-                  onClick={handleLogout} 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  size="sm"
                   className="ml-2"
                 >
                   Log Out Now
@@ -270,40 +268,40 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Button 
-                      onClick={() => router.push("/profile")} 
+                    <Button
+                      onClick={() => router.push("/profile")}
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="outline"
                     >
                       <User className="h-6 w-6" />
                       <span className="font-medium text-sm">Profile</span>
                     </Button>
-                    <Button 
-                      onClick={() => setShowOrganizations(true)} 
+                    <Button
+                      onClick={() => setShowOrganizations(true)}
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="default"
                     >
                       <Building2 className="h-6 w-6" />
                       <span className="font-medium text-sm">Organizations</span>
                     </Button>
-                    <Button 
-                      onClick={() => router.push("/requests/send")} 
+                    <Button
+                      onClick={() => router.push("/requests/send")}
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="outline"
                     >
                       <Users className="h-6 w-6" />
                       <span className="font-medium text-sm">Requests</span>
                     </Button>
-                    <Button 
-                      onClick={() => router.push("/roles")} 
+                    <Button
+                      onClick={() => router.push("/roles")}
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="outline"
                     >
                       <Shield className="h-6 w-6" />
                       <span className="font-medium text-sm">Roles</span>
                     </Button>
-                    <Button 
-                      onClick={() => router.push("/teams")} 
+                    <Button
+                      onClick={() => router.push("/teams")}
                       className="h-20 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                       variant="outline"
                     >
@@ -386,7 +384,7 @@ export default function DashboardPage() {
                         </Table>
                       </div>
                     )}
-                    
+
                     {/* Add Create Organization button even when there are existing organizations */}
                     <div className="mt-4 text-center">
                       <Button variant="outline" onClick={() => router.push("/organizations")}>
@@ -414,48 +412,48 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/requests/send`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/requests/send`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="default"
                   >
                     <Users className="h-6 w-6" />
                     <span className="font-medium">Requests</span>
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/roles`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/roles`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="outline"
                   >
                     <Shield className="h-6 w-6" />
                     <span className="font-medium">Roles & Permissions</span>
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/teams`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/teams`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="outline"
                   >
                     <Users className="h-6 w-6" />
                     <span className="font-medium">Teams</span>
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/workspaces`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/workspaces`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="outline"
                   >
                     <FolderOpen className="h-6 w-6" />
                     <span className="font-medium">Workspaces</span>
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/issue-types`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/issue-types`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="outline"
                   >
                     <Bug className="h-6 w-6" />
                     <span className="font-medium">Issue Types</span>
                   </Button>
-                  <Button 
-                    onClick={() => router.push(`/organizations/${selectedOrg.id}/analysis`)} 
+                  <Button
+                    onClick={() => router.push(`/organizations/${selectedOrg.id}/analysis`)}
                     className="h-24 flex flex-col items-center justify-center gap-2 hover:scale-105 transition-transform"
                     variant="outline"
                   >

@@ -4,12 +4,13 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { RequestsNav } from "@/components/requests/requests-nav"
 import { OutgoingRequestsTable } from "@/components/requests/outgoing-requests-table"
+import { authStorage } from "@/lib/auth-storage"
 
 export default function OutgoingRequestsPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token")
+    const token = authStorage.getAuthToken()
     if (!token) {
       router.push("/login")
     }
