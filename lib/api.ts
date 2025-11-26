@@ -1,6 +1,44 @@
 // Utility functions for API calls with authentication
 
+import { validateAndExtractUserInfo } from "./token-validation"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+
+// Add detailed logging for debugging token issues
+const logTokenInfo = (token: string | null, source: string) => {
+  if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+    console.log(`[TOKEN DEBUG] ${source}:`, {
+      timestamp: new Date().toISOString(),
+      tokenExists: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : null,
+      userId: token ? parseUserIdFromToken(token) : null
+    })
+  }
+}
+
+// Helper function to parse user ID from JWT token
+// Backend stores user ID in "sub" field, not email
+const parseUserIdFromToken = (token: string | null): number | null => {
+  if (!token) return null
+  
+  const tokenInfo = validateAndExtractUserInfo(token);
+  if (tokenInfo && tokenInfo.userId) {
+    return tokenInfo.userId;
+  }
+  
+  // Fallback to localStorage if token parsing fails
+  if (typeof window !== 'undefined') {
+    const storedUserId = localStorage.getItem("user_id")
+    if (storedUserId && 
+        storedUserId !== "1" && 
+        Number.isInteger(Number(storedUserId)) && 
+        Number(storedUserId) > 1) {
+      return Number(storedUserId)
+    }
+  }
+  
+  return null
+}
 
 export class ApiError extends Error {
   constructor(
@@ -37,8 +75,21 @@ export class ApiError extends Error {
   }
 }
 
+// Cache for the token to avoid repeated localStorage calls
+let cachedToken: string | null = null
+let tokenCheckTimestamp: number = 0
+const TOKEN_CACHE_DURATION = 50 // 50ms - very short duration for more frequent checks
+
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
+  // Always check localStorage for the latest token (more aggressive approach)
   const token = localStorage.getItem("access_token")
+  
+  // Log token information for debugging
+  logTokenInfo(token, "fetchWithAuth")
+  
+  // Update cache with the latest token
+  cachedToken = token
+  tokenCheckTimestamp = Date.now()
 
   if (!token) {
     throw new ApiError("No authentication token found", 401)
@@ -48,7 +99,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      "Authorization": `Bearer ${token}`, // Ensure we're using the latest token
       ...options.headers,
     },
   })
@@ -107,4 +158,13 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
   }
 
   return response.json()
+}
+
+// Function to clear the token cache when a new token is set
+export function clearTokenCache() {
+  cachedToken = null
+  tokenCheckTimestamp = 0
+  if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+    console.log("[TOKEN DEBUG] Token cache cleared at", new Date().toISOString())
+  }
 }

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import useSWR from "swr"
-import { fetchWithAuth } from "@/lib/api"
+import useSWR, { mutate } from "swr"
+import { fetchWithAuth, clearTokenCache } from "@/lib/api"
+import { hasTokenIssue, getValidatedUserId } from "@/lib/token-validation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -21,10 +22,11 @@ interface Organization {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+  const [user, setUser] = useState<{ id?: number; name: string; email: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showOrganizations, setShowOrganizations] = useState(false)
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null)
+  const [tokenIssue, setTokenIssue] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem("access_token")
@@ -32,6 +34,9 @@ export default function DashboardPage() {
       router.push("/login")
       return
     }
+
+    // Check for token issues
+    setTokenIssue(hasTokenIssue())
 
     const userData = localStorage.getItem("user_data")
     if (userData) {
@@ -43,9 +48,84 @@ export default function DashboardPage() {
     setIsLoading(false)
   }, [router])
 
+  // Add event listener for user login
+  useEffect(() => {
+    const handleUserLogin = (event: CustomEvent) => {
+      const userData = event.detail
+      
+      // Log the login event
+      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+        console.log("[TOKEN DEBUG] Received userLogin event:", {
+          userId: userData.user_id || userData.id,
+          email: userData.email
+        })
+      }
+      
+      // Update user state with new login data
+      setUser({
+        id: userData.user_id || userData.id,
+        name: userData.name || userData.email?.split("@")[0] || "User",
+        email: userData.email || "user@example.com"
+      })
+      
+      // Clear ALL SWR caches to ensure no cached data with old tokens
+      if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+        console.log("[TOKEN DEBUG] Clearing all SWR caches on userLogin event")
+      }
+      mutate(() => true, undefined, { revalidate: false })
+      
+      // Clear the token cache
+      clearTokenCache()
+      
+      // Refresh any SWR data that might be cached with old user data
+      // This will force revalidation of all SWR hooks
+      if (typeof window !== 'undefined') {
+        // Force a page refresh to ensure all components use the new token
+        if (localStorage.getItem("debug_tokens") === "true") {
+          console.log("[TOKEN DEBUG] Reloading page to ensure token consistency")
+        }
+        window.location.reload()
+      }
+    }
+
+    window.addEventListener('userLogin', handleUserLogin as EventListener)
+    
+    return () => {
+      window.removeEventListener('userLogin', handleUserLogin as EventListener)
+    }
+  }, [])
+
+  // Add event listener for organization creation
+  useEffect(() => {
+    const handleOrganizationCreated = () => {
+      // If we're currently showing organizations, refresh the data
+      if (showOrganizations) {
+        // This will trigger a re-fetch of the organizations data
+        setShowOrganizations(false)
+        setTimeout(() => setShowOrganizations(true), 100)
+      }
+    }
+
+    window.addEventListener('organizationCreated', handleOrganizationCreated)
+    
+    return () => {
+      window.removeEventListener('organizationCreated', handleOrganizationCreated)
+    }
+  }, [showOrganizations])
+
   const handleLogout = () => {
+    if (typeof window !== 'undefined' && localStorage.getItem("debug_tokens") === "true") {
+      console.log("[TOKEN DEBUG] User logging out, clearing all authentication data")
+    }
+    
     localStorage.removeItem("access_token")
     localStorage.removeItem("user_data")
+    localStorage.removeItem("user_id")
+    localStorage.removeItem("selected_org")
+    // Clear ALL SWR caches to ensure no cached data with old tokens
+    mutate(() => true, undefined, { revalidate: false })
+    // Clear the token cache
+    clearTokenCache()
     router.push("/login")
   }
 
@@ -107,6 +187,9 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
             )}
+            <Button onClick={() => router.push("/debug/tokens")} variant="outline" size="sm">
+              Debug Tokens
+            </Button>
             <Button onClick={handleLogout} variant="outline" size="sm">
               <LogOut className="h-4 w-4 mr-2" />
               Log out
@@ -117,6 +200,23 @@ export default function DashboardPage() {
 
       <main className="container mx-auto px-6 py-12">
         <div className="max-w-6xl mx-auto space-y-8">
+          {tokenIssue && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Token Issue Detected:</strong> There appears to be an issue with your authentication token. 
+                This may cause incorrect user information to be displayed. Please log out and log back in.
+                <Button 
+                  onClick={handleLogout} 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2"
+                >
+                  Log Out Now
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           {!selectedOrg && !showOrganizations && (
             <>
               <Card className="border-2 border-primary/20 shadow-lg">

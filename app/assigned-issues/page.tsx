@@ -1,18 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ArrowLeft, User, AlertCircle, Filter, X } from "lucide-react"
 import useSWR from "swr"
 import { fetchWithAuth } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { ArrowLeft, AlertCircle, Filter } from "lucide-react"
+import { isTokenDebuggingEnabled } from "@/lib/token-debug"
+import { getValidatedUserId } from "@/lib/token-validation"
+
+interface User {
+  id: number
+  name: string
+  email: string
+}
 
 interface Issue {
   id: number
@@ -38,13 +45,6 @@ interface Issue {
 interface Project {
   id: number
   name: string
-  workspace_id: number
-}
-
-interface User {
-  id: number
-  name: string
-  email: string
 }
 
 export default function AssignedIssuesPage() {
@@ -62,27 +62,24 @@ export default function AssignedIssuesPage() {
     if (userData && accessToken) {
       const parsedUser = JSON.parse(userData)
       
-      // For now, we'll need to get the user ID from somewhere else
-      // Since /api/users/me doesn't exist, let's try to get it from the login response
-      // or we can modify the login to store the user ID
-      
-      // Temporary solution: Check if we have user ID in localStorage from login
-      const userId = localStorage.getItem("user_id")
-      
-      if (userId) {
+      // Use the new validated user ID extraction
+      const validatedUserId = getValidatedUserId();
+      if (validatedUserId) {
         setUser({
-          id: parseInt(userId),
+          id: validatedUserId,
           name: parsedUser.name,
           email: parsedUser.email
         })
-      } else {
-        // If no user ID available, show error
-        toast({
-          title: "Error",
-          description: "User ID not found. Please log in again to access assigned issues.",
-          variant: "destructive"
-        })
+        setUserLoading(false)
+        return
       }
+      
+      // If no user ID available, show error
+      toast({
+        title: "Error",
+        description: "User ID not found. Please log in again to access assigned issues.",
+        variant: "destructive"
+      })
       
       setUserLoading(false)
     } else {
@@ -101,7 +98,7 @@ export default function AssignedIssuesPage() {
 
   const { data: issues, error, isLoading, mutate } = useSWR<Issue[]>(
     apiUrl,
-    (url) => fetchWithAuth(url)
+    (url: string) => fetchWithAuth(url)
   )
 
   // Fetch organizations to get projects
@@ -248,7 +245,7 @@ export default function AssignedIssuesPage() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Unable to load user information. Please log in again to access your assigned issues.
+              Unable to load user information. Please log in again.
             </AlertDescription>
           </Alert>
         </div>
@@ -259,41 +256,45 @@ export default function AssignedIssuesPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push("/dashboard")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">My Assigned Issues</h1>
-              <p className="text-muted-foreground">
-                Issues assigned to {user.name}
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => router.push("/dashboard")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </div>
+
+        <div>
+          <h1 className="text-3xl font-bold">Assigned Issues</h1>
+          <p className="text-muted-foreground">Issues assigned to you across all projects</p>
         </div>
 
         {/* Filters */}
         <Card>
           <CardHeader className="pb-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              <CardTitle className="text-lg">Filters</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Filter className="h-5 w-5" />
+                <CardTitle>Filters</CardTitle>
+              </div>
+              {hasFilters && (
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  Clear Filters
+                </Button>
+              )}
             </div>
+            <CardDescription>Filter issues by project</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Project</label>
                 <Select value={projectFilter} onValueChange={setProjectFilter}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger>
                     <SelectValue placeholder="All projects" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
-                    {projects?.map((project) => (
+                    <SelectItem value="all">All projects</SelectItem>
+                    {projects?.map((project: Project) => (
                       <SelectItem key={project.id} value={project.id.toString()}>
                         {project.name}
                       </SelectItem>
@@ -301,33 +302,18 @@ export default function AssignedIssuesPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {hasFilters && (
-                <Button variant="outline" onClick={clearFilters}>
-                  <X className="h-4 w-4 mr-2" />
-                  Clear Filters
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>
 
         {/* Issues Table */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Assigned Issues
-            </CardTitle>
-            <CardDescription>
-              {isLoading 
-                ? "Loading your assigned issues..." 
-                : `You have ${issues?.length || 0} assigned issues`
-              }
-            </CardDescription>
+          <CardHeader className="pb-4">
+            <CardTitle>Assigned Issues</CardTitle>
+            <CardDescription>Issues currently assigned to you</CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {isLoading && (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="flex items-center space-x-4">
@@ -339,33 +325,46 @@ export default function AssignedIssuesPage() {
                   </div>
                 ))}
               </div>
-            ) : error ? (
+            )}
+
+            {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   {error.message || "Failed to load assigned issues"}
                 </AlertDescription>
               </Alert>
-            ) : (
-              <>
-                {issues && issues.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Title</TableHead>
-                        <TableHead>Project</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Points</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {issues.map((issue) => (
-                        <TableRow key={issue.id}>
-                          <TableCell className="font-mono text-sm">{issue.id}</TableCell>
-                          <TableCell>
+            )}
+
+            {issues && issues.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No assigned issues found
+              </div>
+            )}
+
+            {issues && issues.length > 0 && (
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">ID</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Title</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Project</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Status</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Priority</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Created</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {issues.map((issue) => {
+                      // Find the project name for this issue
+                      const project = projects?.find((p: Project) => p.id === issue.project_id)
+                      
+                      return (
+                        <tr key={issue.id} className="border-b">
+                          <td className="p-4 align-middle font-mono text-sm">{issue.id}</td>
+                          <td className="p-4 align-middle">
                             <div>
                               <div className="font-medium">{issue.title}</div>
                               {issue.description && (
@@ -374,25 +373,16 @@ export default function AssignedIssuesPage() {
                                 </div>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {projects?.find(p => p.id === issue.project_id)?.name || `Project ${issue.project_id}`}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{getStatusBadge(issue.status)}</TableCell>
-                          <TableCell>{getPriorityBadge(issue.priority)}</TableCell>
-                          <TableCell>
-                            {issue.story_points ? (
-                              <Badge variant="secondary">{issue.story_points}</Badge>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          </td>
+                          <td className="p-4 align-middle">
+                            {project ? project.name : "Unknown Project"}
+                          </td>
+                          <td className="p-4 align-middle">{getStatusBadge(issue.status)}</td>
+                          <td className="p-4 align-middle">{getPriorityBadge(issue.priority)}</td>
+                          <td className="p-4 align-middle text-muted-foreground">
                             {formatDate(issue.created_at)}
-                          </TableCell>
-                          <TableCell>
+                          </td>
+                          <td className="p-4 align-middle">
                             <Select
                               value={issue.status}
                               onValueChange={(newStatus) => handleStatusUpdate(issue.id, newStatus)}
@@ -408,29 +398,13 @@ export default function AssignedIssuesPage() {
                                 ))}
                               </SelectContent>
                             </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                      <User className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">No Assigned Issues</h3>
-                    <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-                      You don't have any issues assigned to you yet. Ask your team lead or project manager to assign you some tasks to get started!
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => router.push("/dashboard")}
-                    >
-                      Back to Dashboard
-                    </Button>
-                  </div>
-                )}
-              </>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </CardContent>
         </Card>

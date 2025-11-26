@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { fetchWithAuth } from "@/lib/api"
+import { hasTokenIssue } from "@/lib/token-validation"
 import { Loader2, Sparkles } from "lucide-react"
 
 interface AIChatInput {
@@ -29,6 +30,16 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check for token issues before making the request
+    if (hasTokenIssue()) {
+      toast({
+        title: "Authentication Issue",
+        description: "There appears to be an issue with your authentication token. Please log out and log back in.",
+        variant: "destructive",
+      })
+      return
+    }
     
     if (!input.trim()) {
       toast({

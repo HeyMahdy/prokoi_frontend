@@ -1,21 +1,23 @@
 "use client"
 
-import useSWR from "swr"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import useSWR from "swr"
 import { fetchWithAuth } from "@/lib/api"
+import { getValidatedUserId } from "@/lib/token-validation"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, User } from "lucide-react"
 import { AddSkillForm } from "@/components/profile/add-skill-form"
 import { SkillsTable } from "@/components/profile/skills-table"
-import { AlertCircle, User } from "lucide-react"
+import { isTokenDebuggingEnabled } from "@/lib/token-debug"
 
-interface UserSkillRow {
-  skill_id: number
-  skill_name: string
-  proficiency_level: string
+interface User {
+  id: number
+  name: string
+  email: string
 }
 
 export default function ProfilePage() {
@@ -29,37 +31,21 @@ export default function ProfilePage() {
       router.push("/login")
       return
     }
-    // Try from user_data first
-    const userData = localStorage.getItem("user_data")
-    if (userData) {
-      try {
-        const parsed = JSON.parse(userData)
-        if (parsed?.id) {
-          setUserId(Number(parsed.id))
-          setInitTried(true)
-          return
-        }
-      } catch {}
+    
+    // Use the new validated user ID extraction
+    const validatedUserId = getValidatedUserId();
+    if (validatedUserId) {
+      setUserId(validatedUserId);
+      setInitTried(true);
+      return;
     }
-    // Fallback: decode JWT (access_token) for user id
-    try {
-      const parts = token.split(".")
-      if (parts.length === 3) {
-        const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
-        const json = decodeURIComponent(
-          atob(b64)
-            .split("")
-            .map((c) => `%${("00" + c.charCodeAt(0).toString(16)).slice(-2)}`)
-            .join("")
-        )
-        const payload = JSON.parse(json)
-        const possibleId = payload.user_id ?? payload.id ?? payload.sub
-        if (possibleId != null) {
-          setUserId(Number(possibleId))
-        }
-      }
-    } catch {}
-    setInitTried(true)
+    
+    // Log error in debug mode
+    if (isTokenDebuggingEnabled()) {
+      console.log("[TOKEN DEBUG] Unable to extract valid user ID from token or localStorage");
+    }
+    
+    setInitTried(true);
   }, [router])
 
   const { data, error, isLoading, mutate } = useSWR<any>(`/api/users/skills`, fetchWithAuth)
@@ -139,5 +125,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
-

@@ -36,6 +36,11 @@ export function CreateOrganizationForm() {
 
       // Revalidate the organizations list
       mutate("/api/organizations/get")
+      
+      // Dispatch a custom event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('organizationCreated', { detail: response }))
+      }
 
       // Show success message and reset form
       setSuccess(true)
