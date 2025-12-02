@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { fetchWithAuth } from "@/lib/api"
 import { Loader2, Gauge } from "lucide-react"
 
-export function UpdateVelocityForm({ teamId, onUpdated }: { teamId: number; onUpdated?: () => void }) {
+export function UpdateVelocityForm({ projectId, teamId, onUpdated }: { projectId: number; teamId: number; onUpdated?: () => void }) {
   const { toast } = useToast()
   const [value, setValue] = useState<string>("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -18,7 +18,7 @@ export function UpdateVelocityForm({ teamId, onUpdated }: { teamId: number; onUp
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await fetchWithAuth(`/api/teams/${teamId}/velocity`, {
+      await fetchWithAuth(`/api/projects/${projectId}/teams/${teamId}/velocity`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avg_hours_per_point: value === "" ? null : Number(value) }),
