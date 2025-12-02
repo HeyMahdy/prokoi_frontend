@@ -168,11 +168,23 @@ export default function TokenDebugPage() {
                   )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">user_data:</span>
-                    <span className="truncate max-w-[200px]">{authStorage.user_data}</span>
+                    <span className="truncate max-w-[200px]">
+                      {authStorage.user_data 
+                        ? typeof authStorage.user_data === 'string' 
+                          ? authStorage.user_data 
+                          : JSON.stringify(authStorage.user_data, null, 2)
+                        : 'null'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">selected_org:</span>
-                    <span>{authStorage.selected_org}</span>
+                    <span>
+                      {authStorage.selected_org 
+                        ? typeof authStorage.selected_org === 'string' 
+                          ? authStorage.selected_org 
+                          : JSON.stringify(authStorage.selected_org, null, 2)
+                        : 'null'}
+                    </span>
                   </div>
                 </div>
               ) : (

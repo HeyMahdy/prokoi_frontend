@@ -31,13 +31,15 @@ export function validateAndExtractUserInfo(token: string | null): {
     const payload = JSON.parse(atob(parts[1]));
 
     // Extract user ID from possible fields
-    // Backend puts user email in "sub" field
+    // Backend puts user email in "sub" field (not numeric ID)
     const userId = payload.sub || payload.user_id || payload.id || null;
     // Extract email from possible fields
     const email = payload.email || payload.user_email || null;
 
     // Check if user ID is the default placeholder (1) - this is a critical issue
     const userIdIsDefault = userId === 1 || userId === "1";
+    // Check if user ID is an email (current backend behavior)
+    const userIdIsEmail = typeof userId === 'string' && userId.includes('@');
 
     // If user ID is default value, this indicates a backend token issue
     if (userIdIsDefault) {
@@ -49,7 +51,17 @@ export function validateAndExtractUserInfo(token: string | null): {
       };
     }
 
-    // Validate that user ID is present
+    // If userId is an email, use it as email and set userId to null
+    if (userIdIsEmail) {
+      return {
+        isValid: true,
+        userId: userId, // Use the email as the userId since that's what the backend provides
+        email: email || userId, // Use userId as email if email field not present
+        isTokenIssue: false // This is not an issue since it's the intended behavior
+      };
+    }
+
+    // Validate that user ID is present and looks like a proper ID
     const validUserId = userId ? userId : null;
 
     return {

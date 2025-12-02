@@ -18,8 +18,8 @@ const logTokenInfo = (token: string | null, source: string) => {
 }
 
 // Helper function to parse user ID from JWT token
-// Backend stores user ID in "sub" field, not email
-const parseUserIdFromToken = (token: string | null): number | null => {
+// Backend stores user ID in "sub" field, which can be an email
+const parseUserIdFromToken = (token: string | null): string | number | null => {
   if (!token) return null
 
   const tokenInfo = validateAndExtractUserInfo(token);
@@ -30,11 +30,12 @@ const parseUserIdFromToken = (token: string | null): number | null => {
   // Fallback to storage if token parsing fails
   if (typeof window !== 'undefined') {
     const storedUserId = authStorage.getUserId()
-    if (storedUserId &&
-      storedUserId !== "1" &&
-      Number.isInteger(Number(storedUserId)) &&
-      Number(storedUserId) > 1) {
-      return Number(storedUserId)
+    if (storedUserId && storedUserId !== "1") {
+      // Check if it looks like a number, if so return as number, else return as string
+      if (Number.isInteger(Number(storedUserId)) && Number(storedUserId) > 0) {
+        return Number(storedUserId);
+      }
+      return storedUserId;
     }
   }
 

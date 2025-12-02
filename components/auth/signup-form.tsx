@@ -26,14 +26,14 @@ export function SignupForm() {
   })
 
   // Helper function to extract and validate user ID from login response
-  const extractValidUserId = (data: any, token: string): number => {
+  const extractValidUserId = (data: any, token: string): string | number => {
     // Don't use any default value - properly validate and extract user ID
-    let userId: number | null = null;
+    let userId: string | number | null = null;
 
     // First try to get user ID from response data
-    if (data.user_id && data.user_id !== 1 && Number.isInteger(data.user_id)) {
+    if (data.user_id && data.user_id !== 1) {
       userId = data.user_id;
-    } else if (data.id && data.id !== 1 && Number.isInteger(data.id)) {
+    } else if (data.id && data.id !== 1) {
       userId = data.id;
     }
 
@@ -45,11 +45,9 @@ export function SignupForm() {
           const payload = JSON.parse(atob(parts[1]));
           // Backend stores user ID in "sub" field, not "user_id" or "id"
           const userIdFromToken = payload.sub || payload.user_id || payload.id || null;
-          // Only use if it's a numeric ID, not an email, and not the default value 1
-          if (userIdFromToken &&
-            Number.isInteger(Number(userIdFromToken)) &&
-            Number(userIdFromToken) !== 1) {
-            userId = Number(userIdFromToken);
+          // Only use if it's a valid ID (string or number) and not the default value 1
+          if (userIdFromToken && userIdFromToken !== 1 && userIdFromToken !== "1") {
+            userId = userIdFromToken;
           }
         }
       } catch (e) {
@@ -129,7 +127,7 @@ export function SignupForm() {
       authStorage.setAuthToken(loginData.access_token);
 
       // Extract and validate user ID from response - throw error if invalid
-      let extractedUserId: number;
+      let extractedUserId: string | number;
       try {
         extractedUserId = extractValidUserId(loginData, loginData.access_token);
       } catch (extractionError) {

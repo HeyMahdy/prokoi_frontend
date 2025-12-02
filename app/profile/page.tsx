@@ -23,7 +23,7 @@ interface User {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const [userId, setUserId] = useState<number | null>(null)
+  const [userId, setUserId] = useState<string | number | null>(null)
   const [initTried, setInitTried] = useState(false)
 
   useEffect(() => {

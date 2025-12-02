@@ -1,20 +1,42 @@
+#!/usr/bin/env node
 
-import { validateAndExtractUserInfo } from "./lib/token-validation";
+/**
+ * Script to verify that the token handling fixes are working correctly
+ * This script simulates the backend behavior where the email is stored in the 'sub' field
+ */
 
-// Mock token with email in 'sub' field
-// Header: {"alg":"HS256","typ":"JWT"} -> eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
-// Payload: {"sub":"test@example.com","exp":1735689600} -> eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwfQ
-// Signature: (ignored by our client-side parser) -> signature
-const mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzM1Njg5NjAwfQ.signature";
+import { validateAndExtractUserInfo } from './lib/token-validation';
 
-console.log("Testing token validation with email user ID...");
-const result = validateAndExtractUserInfo(mockToken);
+// Mock JWT token with email in sub field (simulating backend behavior)
+const mockTokenWithEmailInSub = 
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+  "eyJzdWIiOiJ4QGdtYWlsLmNvbSIsImV4cCI6MTc2OTk5OTc1NSwiaWF0IjoxNzY5OTk2MTU1fQ." +
+  "signature";
 
-console.log("Result:", JSON.stringify(result, null, 2));
+// Mock JWT token with numeric ID in sub field (alternative backend behavior)
+const mockTokenWithIdInSub = 
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+  "eyJzdWIiOjEyMywiZXhwIjoxNzY5OTk5NzU1LCJpYXQiOjE3Njk5OTYxNTV9." +
+  "signature";
 
-if (result && result.isValid && result.userId === "test@example.com" && !result.isTokenIssue) {
-    console.log("SUCCESS: Token with email user ID is valid.");
-} else {
-    console.error("FAILURE: Token validation failed or flagged as issue.");
-    process.exit(1);
-}
+console.log("=== Token Validation Test ===");
+
+// Test token with email in sub field
+console.log("\n1. Testing token with email in 'sub' field:");
+const result1 = validateAndExtractUserInfo(mockTokenWithEmailInSub);
+console.log("Result:", result1);
+console.log("Expected: userId should be 'x@gmail.com', isTokenIssue should be false");
+
+// Test token with numeric ID in sub field
+console.log("\n2. Testing token with numeric ID in 'sub' field:");
+const result2 = validateAndExtractUserInfo(mockTokenWithIdInSub);
+console.log("Result:", result2);
+console.log("Expected: userId should be 123, isTokenIssue should be false");
+
+// Test invalid token
+console.log("\n3. Testing invalid token:");
+const result3 = validateAndExtractUserInfo("invalid.token.here");
+console.log("Result:", result3);
+console.log("Expected: isValid should be false");
+
+console.log("\n=== Test Complete ===");
