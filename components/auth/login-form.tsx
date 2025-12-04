@@ -14,6 +14,7 @@ import { clearTokenCache } from "@/lib/api"
 import { mutate } from "swr"
 import { logAuthStorage } from "@/lib/token-debug"
 import { authStorage } from "@/lib/auth-storage"
+import { websocketManager } from "@/lib/websocket-manager"
 
 export function LoginForm() {
   const router = useRouter()
@@ -74,7 +75,7 @@ export function LoginForm() {
         logAuthStorage();
       }
 
-      const response = await fetch("http://127.0.0.1:8000/users/login", {
+      const response = await fetch("http://127.0.0.1:8001/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -145,6 +146,15 @@ export function LoginForm() {
         if (authStorage.isDebugEnabled()) {
           console.log("[TOKEN DEBUG] Dispatched userLogin event");
         }
+      }
+
+      // Immediately call POST /users/get-user-id-by-email and establish WebSocket connection
+      try {
+        console.log("[WebSocket] Initiating WebSocket connection after login");
+        await websocketManager.connectWithEmail(formData.email);
+      } catch (websocketError) {
+        console.error("[WebSocket] Failed to establish WebSocket connection:", websocketError);
+        // Don't block login even if WebSocket connection fails
       }
 
       // Redirect to dashboard

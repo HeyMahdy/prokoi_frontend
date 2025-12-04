@@ -64,7 +64,7 @@ Before you begin, ensure you have the following installed:
 3. **Set up environment variables**
    Create a `.env.local` file in the root directory:
    ```env
-   NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+   NEXT_PUBLIC_API_URL=http://127.0.0.1:8001
    ```
    Replace with your backend API URL if different.
 
@@ -120,14 +120,14 @@ auth-app/
 
 ## 🔌 API Configuration
 
-The application expects a backend API running by default on `http://127.0.0.1:8000`. The API client:
+The application expects a backend API running by default on `http://127.0.0.1:8001`. The API client:
 
 - Automatically includes authentication tokens from `localStorage`
 - Handles API errors gracefully
 - Supports standard REST endpoints
 
 **Environment Variables:**
-- `NEXT_PUBLIC_API_URL`: Backend API base URL (default: `http://127.0.0.1:8000`)
+- `NEXT_PUBLIC_API_URL`: Backend API base URL (default: `http://127.0.0.1:8001`)
 
 The API client in `lib/api.ts` uses JWT tokens stored in `localStorage` with the key `access_token`.
 

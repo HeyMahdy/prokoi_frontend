@@ -14,6 +14,7 @@ import { clearTokenCache } from "@/lib/api"
 import { mutate } from "swr"
 import { logAuthStorage } from "@/lib/token-debug"
 import { authStorage } from "@/lib/auth-storage"
+import { websocketManager } from "@/lib/websocket-manager"
 
 export function SignupForm() {
   const router = useRouter()
@@ -69,7 +70,7 @@ export function SignupForm() {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/users/signup", {
+      const response = await fetch("http://127.0.0.1:8001/users/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +89,7 @@ export function SignupForm() {
       }
 
       // After successful signup, automatically log the user in
-      const loginResponse = await fetch("http://127.0.0.1:8000/users/login", {
+      const loginResponse = await fetch("http://127.0.0.1:8001/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,6 +157,15 @@ export function SignupForm() {
         if (authStorage.isDebugEnabled()) {
           console.log("[TOKEN DEBUG] Dispatched userLogin event");
         }
+      }
+
+      // Immediately call POST /users/get-user-id-by-email and establish WebSocket connection
+      try {
+        console.log("[WebSocket] Initiating WebSocket connection after signup/login");
+        await websocketManager.connectWithEmail(formData.email);
+      } catch (websocketError) {
+        console.error("[WebSocket] Failed to establish WebSocket connection:", websocketError);
+        // Don't block signup/login even if WebSocket connection fails
       }
 
       // Redirect to dashboard

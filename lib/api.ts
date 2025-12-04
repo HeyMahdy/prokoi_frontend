@@ -3,7 +3,7 @@
 import { validateAndExtractUserInfo } from "./token-validation"
 import { authStorage } from "./auth-storage"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001"
 
 // Add detailed logging for debugging token issues
 const logTokenInfo = (token: string | null, source: string) => {
