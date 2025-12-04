@@ -6,6 +6,8 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { Suspense } from "react"
+import { NotificationProvider } from "@/components/providers/notification-context"
+import { NotificationCenter } from "@/components/notifications/notification-center"
 
 export const metadata: Metadata = {
   title: "v0 App",
@@ -22,8 +24,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={<div>Loading...</div>}>
-          {children}
-          <Toaster />
+          <NotificationProvider>
+            <NotificationCenter />
+            {children}
+            <Toaster />
+          </NotificationProvider>
         </Suspense>
         <Analytics />
       </body>

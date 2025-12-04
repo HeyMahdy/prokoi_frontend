@@ -11,6 +11,8 @@ export class WebSocketManager {
   private maxReconnectAttempts: number = 5;
   private reconnectDelay: number = 1000; // Initial delay in ms
   private userEmail: string | null = null;
+  private userId: number | null = null;
+  private listeners: ((message: any) => void)[] = [];
 
   /**
    * Connect to WebSocket using user email
@@ -18,22 +20,23 @@ export class WebSocketManager {
    */
   public async connectWithEmail(userEmail: string): Promise<void> {
     this.userEmail = userEmail;
-    
+
     try {
       // Convert email to numeric user ID
       const userId = await this.getUserIdByEmail(userEmail);
-      
+      this.userId = userId;
+
       // Construct WebSocket URL with numeric user ID
       const websocketUrl = `${WEBSOCKET_BASE_URL}/${userId}/WS_CONNECTION`;
-      
+
       console.log(`[WebSocket] Connecting to: ${websocketUrl}`);
-      
+
       // Create WebSocket connection
       this.websocket = new WebSocket(websocketUrl);
-      
+
       // Set up event handlers
       this.setupEventHandlers();
-      
+
       // Reset reconnect attempts on successful connection initiation
       this.reconnectAttempts = 0;
     } catch (error) {
@@ -50,7 +53,7 @@ export class WebSocketManager {
   private async getUserIdByEmail(email: string): Promise<number> {
     try {
       console.log(`[WebSocket] Converting email to user ID: ${email}`);
-      
+
       const response = await fetch(USER_ID_LOOKUP_ENDPOINT, {
         method: "POST", // Using POST as per requirement (email in body)
         headers: {
@@ -64,11 +67,11 @@ export class WebSocketManager {
       }
 
       const data = await response.json();
-      
+
       if (!data.user_id) {
         throw new Error("Invalid response format: missing user_id");
       }
-      
+
       console.log(`[WebSocket] Email ${email} converted to user ID: ${data.user_id}`);
       return data.user_id;
     } catch (error) {
@@ -112,8 +115,62 @@ export class WebSocketManager {
       const message = JSON.parse(data);
       // Process notification message
       console.log("[WebSocket] Processing message:", message);
+
+      // Notify all listeners
+      this.listeners.forEach(listener => listener(message));
     } catch (error) {
       console.error("[WebSocket] Error parsing message:", error);
+    }
+  }
+
+  /**
+   * Subscribe to WebSocket messages
+   * @param callback - Function to be called when a message is received
+   * @returns Unsubscribe function
+   */
+  public subscribe(callback: (message: any) => void): () => void {
+    this.listeners.push(callback);
+    return () => {
+      this.listeners = this.listeners.filter(listener => listener !== callback);
+    };
+  }
+
+  /**
+   * Acknowledge a notification
+   * @param notificationId - ID of the notification to acknowledge
+   */
+  public async acknowledgeNotification(notificationId: string | number): Promise<void> {
+    if (this.userId === null) {
+      console.warn("[WebSocket] Cannot acknowledge notification: User ID not available");
+      // Try to recover user ID from storage if possible, or fail
+      // For now, we'll just log an error, but in a real app we might want to fetch it again
+      return;
+    }
+
+    try {
+      console.log(`[WebSocket] Acknowledging notification: ${notificationId} for user ${this.userId}`);
+
+      const body = {
+        user_id: this.userId,
+        message_ids: [String(notificationId)]
+      };
+
+      const response = await fetch("http://localhost:8001/api/notifications/ACKNOWLEDGE", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to acknowledge notification: ${response.status}`);
+      }
+
+      console.log(`[WebSocket] Notification ${notificationId} acknowledged successfully`);
+    } catch (error) {
+      console.error("[WebSocket] Error acknowledging notification:", error);
+      throw error;
     }
   }
 
@@ -124,9 +181,9 @@ export class WebSocketManager {
     if (this.reconnectAttempts < this.maxReconnectAttempts && this.userEmail) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
-      
+
       console.log(`[WebSocket] Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
+
       setTimeout(() => {
         this.connectWithEmail(this.userEmail!);
       }, delay);
@@ -144,6 +201,8 @@ export class WebSocketManager {
       this.websocket = null;
     }
     this.reconnectAttempts = 0;
+    this.listeners = [];
+    this.userId = null;
   }
 
   /**

@@ -60,7 +60,7 @@ export function AIIssueGenerator({ projectId, onIssuesGenerated }: AIIssueGenera
 
       // Make API call to the chat endpoint with project_id as query parameter
       // Using fetchWithAuth to include JWT token with the correct base URL
-      const API_BASE_URL = "http://127.0.0.1:8001"
+      const API_BASE_URL = "http://127.0.0.1:8000"
 
       // Create a custom fetch function for the AI endpoint that includes the token
       const token = authStorage.getAuthToken()
